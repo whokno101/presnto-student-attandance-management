@@ -1,0 +1,20 @@
+{
+  "name": "university-attendance-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "University Attendance Management System — React (Vite) + Tailwind + shadcn/ui client, Express + MongoDB server, JWT auth.",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=server",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "build": "npm run build --workspace=client",
+    "seed": "npm run seed --workspace=server"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
