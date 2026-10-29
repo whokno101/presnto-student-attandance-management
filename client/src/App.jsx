@@ -9,6 +9,9 @@ import NotFound from '@/pages/NotFound'
 import MyClasses from '@/pages/MyClasses'
 import Reports from '@/pages/Reports'
 import Notifications from '@/pages/Notifications'
+import DataExchange from '@/pages/DataExchange'
+import Excuses from '@/pages/student/Excuses'
+import ExcuseReview from '@/pages/faculty/ExcuseReview'
 import Analytics from '@/pages/admin/Analytics'
 import Insights from '@/pages/faculty/Insights'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
@@ -120,6 +123,30 @@ export default function App() {
           }
         />
         <Route path="/notifications" element={<Notifications />} />
+        <Route
+          path="/data"
+          element={
+            <RequireRole roles={['admin', 'faculty']}>
+              <DataExchange />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/excuses/review"
+          element={
+            <RequireRole roles={['admin', 'faculty']}>
+              <ExcuseReview />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/excuses"
+          element={
+            <RequireRole roles={['student']}>
+              <Excuses />
+            </RequireRole>
+          }
+        />
         <Route
           path="/reports"
           element={

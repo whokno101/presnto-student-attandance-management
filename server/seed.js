@@ -442,6 +442,37 @@ const seedDatabase = async () => {
   }
   console.log(`  ${alerts} at-risk alerts sent to faculty`);
 
+  // A few absence excuses (PB-19) for faculty1's class: two pending, one approved.
+  console.log('Submitting sample absence excuses...');
+  const excuseService = require('./services/excuse.service');
+  const demoClass = createdClasses[0];
+  const demoAbsences = await Attendance.find({ class: demoClass._id, status: 'absent' }).sort({ date: -1 }).limit(3).lean();
+  const ownerUser = userById.get(String(markedByByClass.get(String(demoClass._id))));
+  const reasons = [
+    ['illness', 'I had the flu and my doctor told me to stay home for two days.'],
+    ['transport', 'The train line was suspended because of flooding, so I could not reach campus.'],
+    ['family', 'I had to attend a family funeral out of town.'],
+  ];
+  for (const [index, absence] of demoAbsences.entries()) {
+    const profile = studentDocs.find((st) => String(st._id) === String(absence.student));
+    const studentUser = userById.get(String(profile.user));
+    const actor = { id: String(studentUser._id), name: studentUser.name, role: 'student' };
+    // eslint-disable-next-line no-await-in-loop
+    const excuse = await excuseService.submit(actor, {
+      classId: String(demoClass._id),
+      date: ymd(absence.date),
+      category: reasons[index][0],
+      explanation: reasons[index][1],
+    });
+    if (index === 2) {
+      // eslint-disable-next-line no-await-in-loop
+      await excuseService.review({ id: String(ownerUser._id), name: ownerUser.name, role: 'faculty' }, excuse.id, {
+        decision: 'approved',
+        note: 'Thank you for letting me know.',
+      });
+    }
+  }
+
   /* ---------------------------------------------------------------- *
    * 5. Summary — read back from MongoDB so the numbers reflect the database
    * ---------------------------------------------------------------- */

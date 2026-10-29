@@ -40,6 +40,10 @@ const errorHandler = (err, req, res, next) => {
     code = CODES.DUPLICATE_KEY;
     message = DUPLICATE_FIELD_MESSAGES[fields[0]] || `Duplicate value for: ${fields.join(', ')}`;
     details = fields.map((field) => ({ field, message }));
+  } else if (err.type === 'entity.too.large') {
+    status = 413;
+    code = CODES.VALIDATION_ERROR;
+    message = 'The upload is too large';
   } else if (err instanceof SyntaxError && 'body' in err) {
     status = 400;
     code = CODES.VALIDATION_ERROR;

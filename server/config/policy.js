@@ -50,6 +50,14 @@ module.exports = {
   /** Whether faculty may import attendance CSVs for their own classes (PB-17). */
   FACULTY_IMPORT_ENABLED: process.env.FACULTY_IMPORT_ENABLED !== 'false',
 
+  /** PB-19: whether an excuse must include a supporting document, and its limits. */
+  EXCUSE_DOCUMENT_REQUIRED: process.env.EXCUSE_DOCUMENT_REQUIRED === 'true',
+  EXCUSE_MAX_BYTES: 5 * 1024 * 1024,
+  EXCUSE_FILE_TYPES: ['application/pdf', 'image/png', 'image/jpeg'],
+
+  /** PB-17: largest CSV accepted for import. */
+  IMPORT_MAX_BYTES: 2 * 1024 * 1024,
+
   /** QR check-in tokens rotate every N seconds (PB-20). */
   QR_ROTATION_SECONDS: 15,
 };
