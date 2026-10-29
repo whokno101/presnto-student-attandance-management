@@ -18,7 +18,7 @@ export default function DatePicker({ id, value, onChange, maxDate, disabled }) {
           type="button"
           variant="outline"
           disabled={disabled}
-          className="w-full justify-start gap-2 text-left font-normal sm:w-[250px]"
+          className="w-full justify-start gap-2 border-input bg-card text-start font-sans text-[0.95rem] font-normal normal-case tracking-normal hover:border-foreground/60 hover:bg-card hover:text-foreground sm:w-[250px]"
         >
           <CalendarDays className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           {value ? formatPickedDay(value) : 'Pick a date'}

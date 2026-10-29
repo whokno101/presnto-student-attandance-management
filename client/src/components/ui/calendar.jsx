@@ -20,8 +20,8 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }) {
           buttonVariants({ variant: 'outline' }),
           'h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100'
         ),
-        nav_button_previous: 'absolute left-1',
-        nav_button_next: 'absolute right-1',
+        nav_button_previous: 'absolute start-1',
+        nav_button_next: 'absolute end-1',
         table: 'w-full border-collapse space-y-1',
         head_row: 'flex',
         head_cell: 'text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]',
@@ -45,8 +45,8 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }) {
         ...classNames,
       }}
       components={{
-        IconLeft: () => <ChevronLeft className="h-4 w-4" />,
-        IconRight: () => <ChevronRight className="h-4 w-4" />,
+        IconLeft: () => <ChevronLeft className="h-4 w-4 rtl:-scale-x-100" />,
+        IconRight: () => <ChevronRight className="h-4 w-4 rtl:-scale-x-100" />,
       }}
       {...props}
     />

@@ -212,7 +212,7 @@ export default function DataExchange() {
                   type="file"
                   accept=".csv,text/csv"
                   onChange={choose}
-                  className="block w-full text-sm file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="block w-full text-sm file:me-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
               </div>
               <Button onClick={validate} disabled={!file || busy === 'preview' || Boolean(result)}>
@@ -234,7 +234,7 @@ export default function DataExchange() {
                   {error.message}
                 </p>
                 {error.details?.length ? (
-                  <ul className="mt-2 list-disc space-y-1 pl-6 text-muted-foreground">
+                  <ul className="mt-2 list-disc space-y-1 ps-6 text-muted-foreground">
                     {error.details.map((d, i) => (
                       <li key={i}>{d.message}</li>
                     ))}

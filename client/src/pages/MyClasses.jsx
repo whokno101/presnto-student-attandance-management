@@ -2,16 +2,18 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertCircle, BookOpen, Plus } from 'lucide-react'
 
-import ClassCard from '@/components/classes/ClassCard'
+import ClassRows from '@/components/classes/ClassRows'
+import DeparturesBoard from '@/components/board/DeparturesBoard'
+import BoardClock from '@/components/common/BoardClock'
 import EmptyState from '@/components/common/EmptyState'
 import PageHeader from '@/components/common/PageHeader'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/context/AuthContext'
 import { getErrorMessage } from '@/lib/api'
 import { listMyClasses } from '@/services/classes'
+import { weekBoardRows } from '@/lib/board'
 
-const SKELETONS = 3
 
 export default function MyClasses() {
   const { user } = useAuth()
@@ -37,6 +39,9 @@ export default function MyClasses() {
   }, [load])
 
   const isFaculty = user?.role === 'faculty'
+  const boardRows = weekBoardRows(classes, [], {
+    action: isFaculty ? (m) => ({ to: `/attendance/mark?class=${m.classId}`, label: 'Take attendance' }) : undefined,
+  })
 
   return (
     <div className="space-y-5">
@@ -60,17 +65,9 @@ export default function MyClasses() {
       />
 
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: SKELETONS }).map((_, index) => (
-            <Card key={`skeleton-${index}`}>
-              <CardContent className="space-y-3 p-5">
-                <div className="h-4 w-16 animate-pulse rounded bg-muted" />
-                <div className="h-5 w-3/4 animate-pulse rounded bg-muted" />
-                <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
-                <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-                <div className="h-1.5 w-full animate-pulse rounded-full bg-muted" />
-              </CardContent>
-            </Card>
+        <div className="space-y-2" role="status" aria-label="Loading your classes">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="h-14 animate-pulse rounded-md bg-muted" />
           ))}
         </div>
       ) : error ? (
@@ -110,11 +107,19 @@ export default function MyClasses() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {classes.map((classDoc) => (
-            <ClassCard key={classDoc.id} classDoc={classDoc} />
-          ))}
-        </div>
+        <>
+          <Card>
+            <CardHeader className="flex-row items-baseline justify-between space-y-0 pb-2">
+              <CardTitle>This week</CardTitle>
+              <BoardClock className="text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <DeparturesBoard surface="card" dense rows={boardRows} caption="Your sessions this week, by start time" />
+            </CardContent>
+          </Card>
+
+          <ClassRows classes={classes} caption={isFaculty ? 'Classes you teach' : 'Classes you are enrolled in'} />
+        </>
       )}
     </div>
   )

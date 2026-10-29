@@ -178,7 +178,7 @@ export default function ManageClasses() {
           <TabsTrigger value="archived">
             Archived
             {archived.total ? (
-              <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">
+              <Badge variant="secondary" className="ms-1 px-1.5 py-0 text-[10px]">
                 {archived.total}
               </Badge>
             ) : null}
@@ -198,7 +198,7 @@ export default function ManageClasses() {
                     <TableHead>Schedule</TableHead>
                     <TableHead>Faculty</TableHead>
                     <TableHead>Enrolled</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-end">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -285,7 +285,7 @@ export default function ManageClasses() {
                     <TableHead>Archived</TableHead>
                     <TableHead>By</TableHead>
                     <TableHead>Restorable</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-end">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -319,7 +319,7 @@ export default function ManageClasses() {
                             </span>
                           )}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-end">
                           <Button
                             variant="outline"
                             size="sm"

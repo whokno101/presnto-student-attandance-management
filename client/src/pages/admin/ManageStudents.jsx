@@ -113,7 +113,7 @@ export default function ManageStudents() {
                 <TableHead>Email</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-end">Actions</TableHead>
               </TableRow>
             </TableHeader>
 

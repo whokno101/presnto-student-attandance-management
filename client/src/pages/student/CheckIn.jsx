@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import jsQR from 'jsqr'
-import { AlertCircle, Camera, CameraOff, CheckCircle2, Info, Loader2, ScanLine } from 'lucide-react'
+import { AlertCircle, Camera, CameraOff, CheckCircle2, Info, Loader2, QrCode, ScanLine } from 'lucide-react'
 
 import PageHeader from '@/components/common/PageHeader'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Pass, PassField, PassPerforation } from '@/components/board/Pass'
+import { Signal } from '@/components/board/DeparturesBoard'
+import BoardClock from '@/components/common/BoardClock'
+import { useAuth } from '@/context/AuthContext'
 import { getErrorCode, getErrorMessage } from '@/lib/api'
 import { cn } from '@/lib/utils'
 import { checkInWithToken } from '@/services/qr'
+import { listMyClasses } from '@/services/classes'
+import { weekBoardRows, ymdLocal } from '@/lib/board'
 
 /** The QR holds a /check-in?token=… link; accept that or a bare token. */
 const tokenFrom = (text) => {
@@ -26,15 +31,28 @@ const OUTCOME = {
   error: { tone: 'error', icon: AlertCircle, title: 'Check-in failed' },
 }
 
-const TONE = {
-  success: 'border-success/40 bg-success/5',
-  info: 'border-primary/40 bg-primary/5',
-  error: 'border-destructive/40 bg-destructive/5',
-}
-
 const ICON_TONE = { success: 'text-success', info: 'text-primary', error: 'text-destructive' }
 
+/** The session this pass is for: the one in progress, else the next one today. */
+const todaysSession = (classes) => {
+  const today = weekBoardRows(classes, [], { limit: 50 }).filter((row) => row.date === ymdLocal(new Date()))
+  return today.find((row) => row.status.tone === 'live') ?? today.find((row) => row.status.label !== 'Ended') ?? null
+}
+
 export default function CheckIn() {
+  const { user } = useAuth()
+  // undefined while loading, null when no class remains today
+  const [session, setSession] = useState(undefined)
+
+  useEffect(() => {
+    let active = true
+    listMyClasses()
+      .then((classes) => active && setSession(todaysSession(classes)))
+      .catch(() => active && setSession(null))
+    return () => {
+      active = false
+    }
+  }, [])
   const [searchParams, setSearchParams] = useSearchParams()
   const [outcome, setOutcome] = useState(null)
   const [busy, setBusy] = useState(false)
@@ -136,41 +154,52 @@ export default function CheckIn() {
   const meta = outcome ? OUTCOME[outcome.kind] ?? OUTCOME.error : null
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader title="Check in" description="Scan the QR code on your teacher's screen to record your attendance for today's class." />
 
-      {busy ? (
-        <Card>
-          <CardContent className="flex items-center gap-3 p-6 text-sm" role="status">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" aria-hidden="true" />
-            Checking you in…
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {meta ? (
-        <div role={outcome.kind === 'error' ? 'alert' : 'status'} className={cn('flex gap-3 rounded-lg border p-5', TONE[meta.tone])}>
-          <meta.icon className={cn('mt-0.5 h-6 w-6 shrink-0', ICON_TONE[meta.tone])} aria-hidden="true" />
-          <div className="space-y-1">
-            <p className="font-semibold">{meta.title}</p>
-            <p className="text-sm">{outcome.message}</p>
-            {outcome.hint ? <p className="text-sm text-muted-foreground">{outcome.hint}</p> : null}
-          </div>
+      <Pass className="mx-auto max-w-md">
+        <div className="flex items-start justify-between gap-4 px-6 pb-5 pt-6">
+          <h3 className="min-w-0 break-words font-display text-[1.75rem] font-bold uppercase leading-none tracking-[0.02em]">{user?.name}</h3>
+          <BoardClock showDay={false} className="shrink-0 pt-1 text-muted-foreground" />
         </div>
-      ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Scanner</CardTitle>
-          <CardDescription>Point your camera at the code. You can also scan it with your phone&apos;s camera app, which opens this page for you.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        {session === undefined ? (
+          <div className="mx-6 mb-5 h-11 animate-pulse rounded-md bg-muted" role="status" aria-label="Loading today's class" />
+        ) : session ? (
+          <div className="flex flex-wrap gap-x-6 gap-y-1 px-6 pb-5">
+            <PassField label="Course" className="flex-1">{session.code}</PassField>
+            {session.hall !== '—' ? <PassField label="Hall">{session.hall}</PassField> : null}
+            <PassField label="Time">{session.time}</PassField>
+            <p className="flex w-full min-w-0 items-center gap-2 text-sm text-muted-foreground">
+              {session.status.tone === 'live' && outcome?.kind !== 'accepted' ? <Signal>In session</Signal> : null}
+              <span className="truncate">{session.title}</span>
+            </p>
+          </div>
+        ) : (
+          <div className="px-6 pb-5">
+            <PassField label="Course">No class left today</PassField>
+            <p className="mt-1 text-sm text-muted-foreground">You can still scan a code your teacher shows; it records you for that session.</p>
+          </div>
+        )}
+
+        <PassPerforation />
+
+        <div className="space-y-4 px-6 py-5">
           {scanning ? (
-            <div className="relative mx-auto aspect-square w-full max-w-sm overflow-hidden rounded-xl border bg-black">
+            <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-md bg-shell">
               <video ref={videoRef} className="h-full w-full object-cover" muted playsInline aria-label="Camera preview" />
-              <ScanLine className="pointer-events-none absolute inset-0 m-auto h-2/3 w-2/3 text-white/70" aria-hidden="true" />
+              <ScanLine className="pointer-events-none absolute inset-0 m-auto h-2/3 w-2/3 text-signal" aria-hidden="true" />
             </div>
-          ) : null}
+          ) : (
+            <div className="flex items-center gap-4">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md border-2 border-dashed border-border" aria-hidden="true">
+                <QrCode className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-[0.95rem] text-muted-foreground">
+                Point your camera at the code on your teacher&apos;s screen. It changes every 15 seconds. Your phone&apos;s camera app works too.
+              </p>
+            </div>
+          )}
           <canvas ref={canvasRef} className="hidden" aria-hidden="true" />
 
           {cameraError ? (
@@ -180,21 +209,43 @@ export default function CheckIn() {
             </p>
           ) : null}
 
-          <div className="flex flex-wrap gap-2">
-            {scanning ? (
-              <Button variant="outline" onClick={stopCamera}>
-                <CameraOff className="h-4 w-4" />
-                Stop camera
-              </Button>
+          {scanning ? (
+            <Button variant="outline" size="lg" className="w-full" onClick={stopCamera}>
+              <CameraOff />
+              Stop camera
+            </Button>
+          ) : (
+            <Button size="lg" className="w-full" onClick={startCamera} disabled={busy}>
+              <Camera />
+              {outcome ? 'Scan again' : 'Start scanning'}
+            </Button>
+          )}
+        </div>
+
+        {busy || meta ? (
+          <>
+            <PassPerforation />
+            {busy ? (
+              <div className="flex items-center gap-3 px-6 py-5 text-[0.95rem]" role="status">
+                <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                Checking you in…
+              </div>
             ) : (
-              <Button onClick={startCamera} disabled={busy}>
-                <Camera className="h-4 w-4" />
-                {outcome ? 'Scan again' : 'Start scanning'}
-              </Button>
+              <div
+                role={outcome.kind === 'error' ? 'alert' : 'status'}
+                className={cn('flex gap-3 px-6 py-5', outcome.kind === 'accepted' && 'animate-signal-in')}
+              >
+                <meta.icon className={cn('mt-0.5 h-6 w-6 shrink-0', ICON_TONE[meta.tone])} aria-hidden="true" />
+                <div className="space-y-1">
+                  <p className="font-display text-xl font-bold uppercase leading-none tracking-[0.03em]">{meta.title}</p>
+                  <p className="text-[0.95rem]">{outcome.message}</p>
+                  {outcome.hint ? <p className="text-sm text-muted-foreground">{outcome.hint}</p> : null}
+                </div>
+              </div>
             )}
-          </div>
-        </CardContent>
-      </Card>
+          </>
+        ) : null}
+      </Pass>
     </div>
   )
 }

@@ -16,7 +16,7 @@ export default function FormField({ label, htmlFor, required, error, hint, class
       <Label htmlFor={htmlFor}>
         {label}
         {required ? (
-          <span className="ml-0.5 text-destructive" aria-hidden="true">
+          <span className="ms-0.5 text-destructive" aria-hidden="true">
             *
           </span>
         ) : null}

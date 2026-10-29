@@ -117,7 +117,7 @@ function SubmitDialog({ absence, onClose, onSubmitted }) {
             setFile(e.target.files?.[0] ?? null)
             setErrors((prev) => ({ ...prev, document: undefined }))
           }}
-          className="block w-full text-sm file:mr-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="block w-full text-sm file:me-3 file:rounded-md file:border file:border-input file:bg-background file:px-3 file:py-1.5 file:text-sm file:font-medium hover:file:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </FormField>
       {file ? (
@@ -186,7 +186,7 @@ export default function Excuses() {
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Date</TableHead>
                   <TableHead>Class</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="text-end">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -196,7 +196,7 @@ export default function Excuses() {
                     <TableCell>
                       <span className="whitespace-nowrap font-mono text-xs">{a.classCode}</span> <span className="text-muted-foreground">{a.className}</span>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       <Button size="sm" variant="outline" onClick={() => setActive(a)} aria-label={`Submit excuse for ${a.classCode} on ${formatDay(a.date)}`}>
                         <FileText className="h-4 w-4" />
                         Submit excuse

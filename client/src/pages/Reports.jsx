@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { labelVariants } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuth } from '@/context/AuthContext'
@@ -50,7 +51,7 @@ const fetchReport = ({ view, ...params }) => getReport(view, params).then((data)
 
 function ArchivedBadge({ show }) {
   return show ? (
-    <Badge variant="secondary" className="ml-2">
+    <Badge variant="secondary" className="ms-2">
       Archived
     </Badge>
   ) : null
@@ -207,7 +208,7 @@ export default function Reports() {
             </>
           ) : null}
           <div className="space-y-1.5">
-            <label htmlFor="report-student" className="text-sm font-medium leading-none">
+            <label htmlFor="report-student" className={labelVariants()}>
               Student
             </label>
             <Input id="report-student" type="search" value={studentInput} onChange={(e) => setStudentInput(e.target.value)} placeholder="Name or student ID" />
@@ -256,7 +257,7 @@ export default function Reports() {
                     <SortHeader label="Date" column="date" sort={sort} onSort={setSort} defaultDir="desc" />
                     <SortHeader label="Class" column="code" sort={sort} onSort={setSort} />
                     <TableHead>Faculty</TableHead>
-                    <TableHead className="text-right">Enrolled</TableHead>
+                    <TableHead className="text-end">Enrolled</TableHead>
                     <SortHeader label="Status counts" column="absent" sort={sort} onSort={setSort} defaultDir="desc" />
                     <SortHeader label="Rate" column="rate" sort={sort} onSort={setSort} />
                   </>
@@ -320,7 +321,7 @@ export default function Reports() {
                         </p>
                       </TableCell>
                       <TableCell className="text-sm">{row.faculty}</TableCell>
-                      <TableCell className="text-right tabular-nums">{row.enrolled}</TableCell>
+                      <TableCell className="text-end tabular-nums">{row.enrolled}</TableCell>
                       <TableCell>
                         <Counts row={row} />
                       </TableCell>
@@ -329,7 +330,7 @@ export default function Reports() {
                           <RateCell rate={row.rate} attended={row.attended} marked={row.eligible} />
                           {row.belowWarning ? (
                             <Badge variant="warning">
-                              <AlertTriangle className="mr-1 h-3 w-3" aria-hidden="true" />
+                              <AlertTriangle className="me-1 h-3 w-3" aria-hidden="true" />
                               Below {policy.sessionWarningRate}%
                             </Badge>
                           ) : null}

@@ -3,28 +3,20 @@ import { AlertCircle, CalendarCheck2 } from 'lucide-react'
 
 import EmptyState from '@/components/common/EmptyState'
 import PageHeader from '@/components/common/PageHeader'
+import SummaryStrip from '@/components/board/SummaryStrip'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getErrorMessage } from '@/lib/api'
 import {
   formatDay,
   percentTone,
   STATUS_META,
-  TONE_BADGE,
-  TONE_BAR,
   TONE_LABEL,
   TONE_TEXT,
 } from '@/lib/attendance'
 import { cn } from '@/lib/utils'
 import { getMyAttendance } from '@/services/attendance'
-
-const TONE_BORDER = {
-  strong: 'border-success',
-  fair: 'border-warning',
-  low: 'border-destructive',
-}
 
 export default function MyAttendance() {
   const [report, setReport] = useState(null)
@@ -53,17 +45,7 @@ export default function MyAttendance() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        title="My Attendance"
-        description="Your record for every class you are enrolled in."
-        action={
-          overall && overall.total > 0 ? (
-            <Badge variant={TONE_BADGE[tone]} className="text-sm">
-              {overall.percentage}% overall
-            </Badge>
-          ) : null
-        }
-      />
+      <PageHeader title="My Attendance" description="Your record for every class you are enrolled in." />
 
       {loading ? (
         <div className="space-y-4">
@@ -111,131 +93,83 @@ export default function MyAttendance() {
         </Card>
       ) : (
         <>
-          <Card className={cn('border-l-4', TONE_BORDER[tone])}>
-            <CardContent className="flex flex-col gap-6 p-6 sm:flex-row sm:items-center">
-              <div className="space-y-1">
-                <p className={cn('text-4xl font-semibold tabular-nums tracking-tight', TONE_TEXT[tone])}>
-                  {overall.percentage}%
-                </p>
-                <p className={cn('text-sm font-medium', TONE_TEXT[tone])}>{TONE_LABEL[tone]}</p>
-                <p className="text-xs text-muted-foreground">
-                  {overall.attended} of {overall.eligible ?? overall.total} classes attended
-                  {overall.excused ? ` (${overall.excused} excused)` : ''}
-                </p>
-              </div>
+          <SummaryStrip
+            items={[
+              {
+                label: 'Overall',
+                value: `${overall.percentage}%`,
+                hint: (
+                  <>
+                    <span className={cn('font-display font-semibold uppercase tracking-[0.06em]', TONE_TEXT[tone])}>{TONE_LABEL[tone]}</span>
+                    {` · ${overall.attended} of ${overall.eligible ?? overall.total} attended${overall.excused ? ` (${overall.excused} excused)` : ''} · 90% keeps you on track`}
+                  </>
+                ),
+              },
+              { label: 'Present', value: overall.present },
+              { label: 'Late', value: overall.late },
+              { label: 'Absent', value: overall.absent, className: overall.absent ? 'text-destructive' : undefined },
+              { label: 'Excused', value: overall.excused ?? 0 },
+            ]}
+            className="sm:grid-cols-[minmax(18rem,2fr)_repeat(4,minmax(6rem,1fr))]"
+          />
 
-              <div className="flex-1 space-y-2">
-                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={cn('h-full rounded-full transition-all', TONE_BAR[tone])}
-                    style={{ width: `${Math.min(100, overall.percentage)}%` }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Across {report.classes.length} {report.classes.length === 1 ? 'class' : 'classes'} ·{' '}
-                  90% required to stay on track
-                </p>
-              </div>
+          <Card>
+            <CardHeader className="pb-0">
+              <CardTitle>By class</CardTitle>
+            </CardHeader>
+            <CardContent className="divide-y pt-2">
+              {report.classes.map((classDoc) => {
+                const classTone = percentTone(classDoc.summary.percentage)
 
-              <dl className="grid shrink-0 grid-cols-4 gap-4 text-center">
-                {[
-                  ['Present', overall.present, 'text-success'],
-                  ['Late', overall.late, 'text-warning'],
-                  ['Absent', overall.absent, 'text-destructive'],
-                  ['Excused', overall.excused ?? 0, 'text-info'],
-                ].map(([label, value, color]) => (
-                  <div key={label}>
-                    <dd className={cn('text-xl font-semibold tabular-nums', color)}>{value}</dd>
-                    <dt className="text-xs text-muted-foreground">{label}</dt>
-                  </div>
-                ))}
-              </dl>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-4 xl:grid-cols-2">
-            {report.classes.map((classDoc) => {
-              const classTone = percentTone(classDoc.summary.percentage)
-
-              return (
-                <Card key={classDoc.id} className="flex flex-col">
-                  <CardHeader className="space-y-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge variant="secondary" className="font-mono text-[11px]">
-                            {classDoc.code}
-                          </Badge>
-                          <CardTitle className="text-base">{classDoc.name}</CardTitle>
+                return (
+                  <section key={classDoc.id} aria-labelledby={`class-${classDoc.id}`} className="py-5 first:pt-3 last:pb-1">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+                      <div className="min-w-0">
+                        <h3 id={`class-${classDoc.id}`} className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                          <span className="font-mono text-[0.95rem] font-medium">{classDoc.code}</span>
+                          <span className="font-display text-lg font-semibold uppercase tracking-[0.03em]">{classDoc.name}</span>
                           {classDoc.archived ? <Badge variant="secondary">Archived</Badge> : null}
-                        </div>
-                        <CardDescription>
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
                           {classDoc.faculty ? `Taught by ${classDoc.faculty.name}` : 'No teacher assigned'}
-                        </CardDescription>
+                        </p>
                       </div>
-
-                      <Badge variant={TONE_BADGE[classTone]} className="shrink-0">
-                        {classDoc.summary.percentage}%
-                      </Badge>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="flex-1 space-y-3 pb-6">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>
-                          {classDoc.summary.attended} of {classDoc.summary.eligible ?? classDoc.summary.total} attended
-                        </span>
-                        <span>
-                          {classDoc.summary.present}P · {classDoc.summary.late}L ·{' '}
-                          {classDoc.summary.absent}A · {classDoc.summary.excused ?? 0}E
-                        </span>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className={cn('h-full rounded-full', TONE_BAR[classTone])}
-                          style={{ width: `${Math.min(100, classDoc.summary.percentage)}%` }}
-                        />
-                      </div>
+                      <dl className="flex items-baseline gap-5 font-mono text-sm tabular-nums">
+                        <div className="flex items-baseline gap-2">
+                          <dt className="sr-only">Rate</dt>
+                          <dd className="text-xl font-medium">{classDoc.summary.percentage}%</dd>
+                          <dd className={cn('font-display text-[0.9rem] font-semibold uppercase tracking-[0.06em]', TONE_TEXT[classTone])}>
+                            {TONE_LABEL[classTone]}
+                          </dd>
+                        </div>
+                        <div className="text-muted-foreground">
+                          <dt className="sr-only">Attended</dt>
+                          <dd>
+                            {classDoc.summary.attended}/{classDoc.summary.eligible ?? classDoc.summary.total}
+                          </dd>
+                        </div>
+                      </dl>
                     </div>
 
-                    <div
-                      className="max-h-64 overflow-y-auto rounded-md border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      tabIndex={0}
-                      role="region"
+                    <ul
+                      className="mt-3 grid border-t sm:grid-cols-2 sm:gap-x-8 xl:grid-cols-3"
                       aria-label={`${classDoc.code} attendance history`}
                     >
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="hover:bg-transparent">
-                            <TableHead>Date</TableHead>
-                            <TableHead className="text-right">Status</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {classDoc.records.map((record) => {
-                            const meta = STATUS_META[record.status]
-                            return (
-                              <TableRow key={record.id}>
-                                <TableCell className="whitespace-nowrap text-sm">
-                                  {formatDay(record.date)}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <Badge variant={meta?.variant ?? 'secondary'}>
-                                    {meta?.label ?? record.status}
-                                  </Badge>
-                                </TableCell>
-                              </TableRow>
-                            )
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
+                      {classDoc.records.map((record) => {
+                        const meta = STATUS_META[record.status]
+                        return (
+                          <li key={record.id} className="flex items-center justify-between gap-3 border-b py-2">
+                            <span className="whitespace-nowrap font-mono text-sm">{formatDay(record.date)}</span>
+                            <Badge variant={meta?.variant ?? 'secondary'}>{meta?.label ?? record.status}</Badge>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </section>
+                )
+              })}
+            </CardContent>
+          </Card>
         </>
       )}
     </div>

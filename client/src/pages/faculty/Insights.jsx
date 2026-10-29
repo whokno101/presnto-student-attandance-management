@@ -113,8 +113,8 @@ export default function Insights() {
                     <TableRow className="hover:bg-transparent">
                       <TableHead>Student</TableHead>
                       <TableHead>Class</TableHead>
-                      <TableHead className="text-right">Rate</TableHead>
-                      <TableHead className="text-right">Unexcused</TableHead>
+                      <TableHead className="text-end">Rate</TableHead>
+                      <TableHead className="text-end">Unexcused</TableHead>
                       <TableHead>Why</TableHead>
                       <TableHead>Next step</TableHead>
                     </TableRow>
@@ -127,8 +127,8 @@ export default function Insights() {
                           <p className="font-mono text-xs text-muted-foreground">{row.studentNumber}</p>
                         </TableCell>
                         <TableCell className="whitespace-nowrap font-mono text-xs">{row.code}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.rate == null ? '—' : `${row.rate}%`}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.absent}</TableCell>
+                        <TableCell className="text-end tabular-nums">{row.rate == null ? '—' : `${row.rate}%`}</TableCell>
+                        <TableCell className="text-end tabular-nums">{row.absent}</TableCell>
                         <TableCell className="max-w-[240px] text-sm">
                           <Badge variant="destructive" className="mb-1">
                             At risk
@@ -177,8 +177,8 @@ export default function Insights() {
                     <TableRow className="hover:bg-transparent">
                       <TableHead>Student</TableHead>
                       <TableHead>Class</TableHead>
-                      <TableHead className="text-right">Absences</TableHead>
-                      <TableHead className="text-right">Rate</TableHead>
+                      <TableHead className="text-end">Absences</TableHead>
+                      <TableHead className="text-end">Rate</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -189,14 +189,14 @@ export default function Insights() {
                             {row.studentName}
                           </Link>
                           {row.atRisk ? (
-                            <Badge variant="destructive" className="ml-2">
+                            <Badge variant="destructive" className="ms-2">
                               At risk
                             </Badge>
                           ) : null}
                         </TableCell>
                         <TableCell className="whitespace-nowrap font-mono text-xs">{row.code}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.absent}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.rate == null ? '—' : `${row.rate}%`}</TableCell>
+                        <TableCell className="text-end tabular-nums">{row.absent}</TableCell>
+                        <TableCell className="text-end tabular-nums">{row.rate == null ? '—' : `${row.rate}%`}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -211,8 +211,8 @@ export default function Insights() {
                     <TableRow className="hover:bg-transparent">
                       <TableHead>Student</TableHead>
                       <TableHead>Class</TableHead>
-                      <TableHead className="text-right">Earlier</TableHead>
-                      <TableHead className="text-right">Last {data.thresholds.recentSessions}</TableHead>
+                      <TableHead className="text-end">Earlier</TableHead>
+                      <TableHead className="text-end">Last {data.thresholds.recentSessions}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -220,9 +220,9 @@ export default function Insights() {
                       <TableRow key={`${row.studentId}-${row.classId}`}>
                         <TableCell className="font-medium">{row.studentName}</TableCell>
                         <TableCell className="whitespace-nowrap font-mono text-xs">{row.code}</TableCell>
-                        <TableCell className="text-right tabular-nums">{row.earlierRate}%</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          <TrendingDown className="mr-1 inline h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                        <TableCell className="text-end tabular-nums">{row.earlierRate}%</TableCell>
+                        <TableCell className="text-end tabular-nums">
+                          <TrendingDown className="me-1 inline h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                           {row.recentRate}%<span className="sr-only"> (down {row.drop} points)</span>
                         </TableCell>
                       </TableRow>

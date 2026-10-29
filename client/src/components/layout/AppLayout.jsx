@@ -24,15 +24,15 @@ export default function AppLayout() {
   }, [pathname])
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
+    <div className="flex min-h-screen bg-background">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring"
+        className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-foreground focus:text-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-ring"
       >
         Skip to main content
       </a>
 
-      <aside className="hidden w-64 shrink-0 border-r bg-card lg:block">
+      <aside className="hidden w-64 shrink-0 bg-shell lg:block">
         <div className="sticky top-0 h-screen">
           <Sidebar />
         </div>
@@ -40,9 +40,9 @@ export default function AppLayout() {
 
       <DialogPrimitive.Root open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 lg:hidden" />
+          <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-shell/70 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 lg:hidden" />
           <DialogPrimitive.Content
-            className="fixed inset-y-0 left-0 z-50 w-64 border-r bg-card shadow-xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left lg:hidden"
+            className="fixed inset-y-0 start-0 z-50 w-64 bg-shell shadow-xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left rtl:data-[state=closed]:slide-out-to-right rtl:data-[state=open]:slide-in-from-right lg:hidden"
             aria-describedby={undefined}
             // The menu button is not a Radix trigger, so hand focus back explicitly.
             onCloseAutoFocus={(event) => {
@@ -58,12 +58,12 @@ export default function AppLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onOpenSidebar={() => setSidebarOpen(true)} menuButtonRef={menuButtonRef} />
-        <main id="main-content" tabIndex={-1} className="flex-1 p-4 focus:outline-none sm:p-6 lg:p-8">
+        <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-[1600px] flex-1 p-4 focus:outline-none sm:p-6 lg:p-8">
           <Suspense
             fallback={
               <div className="space-y-4" role="status" aria-label="Loading page">
-                <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-                <div className="h-40 animate-pulse rounded-lg bg-muted" />
+                <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
+                <div className="h-40 animate-pulse rounded-md bg-muted" />
               </div>
             }
           >

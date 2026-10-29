@@ -1,4 +1,8 @@
-import FilterSelect, { DateFilter } from '@/components/common/FilterSelect'
+import { ChevronDown } from 'lucide-react'
+
+import FilterSelect, { DateFilter, nativeControlClass } from '@/components/common/FilterSelect'
+import { labelVariants } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 
 export const TIMEFRAME_OPTIONS = [
   { value: 'week', label: 'Last 7 days' },
@@ -18,21 +22,24 @@ export default function TimeframeFilter({ idPrefix, value, onChange }) {
   return (
     <>
       <div className="space-y-1.5">
-        <label htmlFor={`${idPrefix}-timeframe`} className="text-sm font-medium leading-none">
+        <label htmlFor={`${idPrefix}-timeframe`} className={labelVariants()}>
           Date range
         </label>
-        <select
-          id={`${idPrefix}-timeframe`}
-          value={value.timeframe}
-          onChange={(event) => onChange({ ...value, timeframe: event.target.value })}
-          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {TIMEFRAME_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            id={`${idPrefix}-timeframe`}
+            value={value.timeframe}
+            onChange={(event) => onChange({ ...value, timeframe: event.target.value })}
+            className={cn(nativeControlClass, 'appearance-none pe-9')}
+          >
+            {TIMEFRAME_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute end-3 top-3 h-4 w-4 opacity-50" aria-hidden="true" />
+        </div>
       </div>
       {value.timeframe === 'custom' ? (
         <>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertCircle, CheckCheck, Loader2, QrCode, Save, Users } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import DatePicker from '@/components/common/DatePicker'
 import EmptyState from '@/components/common/EmptyState'
@@ -33,6 +33,7 @@ export default function MarkAttendance() {
 
   const [classes, setClasses] = useState([])
   const [loadingClasses, setLoadingClasses] = useState(true)
+  const [searchParams] = useSearchParams()
   const [classId, setClassId] = useState('')
   const [date, setDate] = useState(() => new Date())
 
@@ -61,7 +62,9 @@ export default function MarkAttendance() {
 
         if (!active) return
         setClasses(rows)
-        setClassId((current) => current || rows[0]?.id || '')
+        // A board link (/attendance/mark?class=…) preselects that class.
+        const requested = searchParams.get('class')
+        setClassId((current) => current || rows.find((row) => row.id === requested)?.id || rows[0]?.id || '')
       } catch (error) {
         if (active) {
           toast({
@@ -285,7 +288,7 @@ export default function MarkAttendance() {
                 <TableHead>Student</TableHead>
                 <TableHead>Student ID</TableHead>
                 <TableHead className="hidden md:table-cell">Class totals</TableHead>
-                <TableHead className="text-right">Status</TableHead>
+                <TableHead className="text-end">Status</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -309,7 +312,7 @@ export default function MarkAttendance() {
                       {student.rate != null ? ` · ${student.rate}%` : ''}
                     </span>
                     {student.source === 'qr' ? (
-                      <Badge variant="secondary" className="ml-2">
+                      <Badge variant="secondary" className="ms-2">
                         QR
                       </Badge>
                     ) : null}

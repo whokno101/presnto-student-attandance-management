@@ -23,7 +23,7 @@ export default function SearchInput({
   return (
     <div className={`relative w-full sm:w-80 ${className}`}>
       <Search
-        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
         aria-hidden="true"
       />
       <Input
@@ -35,7 +35,7 @@ export default function SearchInput({
         id={id}
         // A visible <label htmlFor={id}> names the box when given; otherwise the placeholder does.
         aria-label={id ? undefined : placeholder}
-        className="pl-9"
+        className="ps-9"
       />
     </div>
   )

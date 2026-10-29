@@ -61,9 +61,9 @@ export default function RateBars({ title, rows, threshold }) {
               <TableRow className="hover:bg-transparent">
                 <TableHead>Class</TableHead>
                 <TableHead>Department</TableHead>
-                <TableHead className="text-right">Enrolled</TableHead>
-                <TableHead className="text-right">Absences</TableHead>
-                <TableHead className="text-right">Rate</TableHead>
+                <TableHead className="text-end">Enrolled</TableHead>
+                <TableHead className="text-end">Absences</TableHead>
+                <TableHead className="text-end">Rate</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -72,22 +72,22 @@ export default function RateBars({ title, rows, threshold }) {
                   <TableCell>
                     <span className="whitespace-nowrap font-mono text-xs">{r.code}</span> <span className="text-muted-foreground">{r.name}</span>
                     {r.archived ? (
-                      <Badge variant="secondary" className="ml-2">
+                      <Badge variant="secondary" className="ms-2">
                         Archived
                       </Badge>
                     ) : null}
                   </TableCell>
                   <TableCell>{r.department}</TableCell>
-                  <TableCell className="text-right tabular-nums">{r.enrolled}</TableCell>
-                  <TableCell className="text-right tabular-nums">{r.absent}</TableCell>
-                  <TableCell className="whitespace-nowrap text-right tabular-nums">
+                  <TableCell className="text-end tabular-nums">{r.enrolled}</TableCell>
+                  <TableCell className="text-end tabular-nums">{r.absent}</TableCell>
+                  <TableCell className="whitespace-nowrap text-end tabular-nums">
                     {r.rate == null ? (
                       <span className="text-muted-foreground">No data</span>
                     ) : (
                       <>
                         {r.belowThreshold ? (
-                          <Badge variant="warning" className="mr-2">
-                            <AlertTriangle className="mr-1 h-3 w-3" aria-hidden="true" />
+                          <Badge variant="warning" className="me-2">
+                            <AlertTriangle className="me-1 h-3 w-3" aria-hidden="true" />
                             Below {threshold}%
                           </Badge>
                         ) : null}

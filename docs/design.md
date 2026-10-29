@@ -94,7 +94,7 @@ Supporting primitives already generated in `client/src/components/ui/`: `button`
 - **Status colours:** Present = emerald, Late = amber, Absent = red — surfaced through custom `Badge` variants (`success`, `warning`, `destructive`).
 - **Spacing:** `p-6` cards, `space-y-4` stacks, `gap-4` grids.
 - **Typography:** Tailwind defaults; `CardTitle` semibold, `text-muted-foreground` for secondary copy, tabular numbers for percentages.
-- **Dark mode:** supported through the CSS-variable tokens; toggling `.dark` on `<html>` is enough.
+- **Dark mode:** the `.dark` token set, switched by `ThemeProvider` (`context/ThemeContext.jsx`) and the light/dark toggle in the top bar and on the login page. The choice is saved under `uams.theme` (it survives logout); with no saved choice the OS setting is followed; an inline script in `index.html` applies it before first paint.
 
 ---
 

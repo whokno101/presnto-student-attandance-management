@@ -140,7 +140,7 @@ function ActivityTab({ timeZone, faculty, classes }) {
                 <TableHead>Action</TableHead>
                 <TableHead>Class</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead className="text-right">Details</TableHead>
+                <TableHead className="text-end">Details</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -176,14 +176,14 @@ function ActivityTab({ timeZone, faculty, classes }) {
                     <TableCell className="whitespace-nowrap">
                       <span className="text-sm">{actionLabel(row.action)}</span>
                       {outcome ? (
-                        <Badge variant={outcome.variant} className="ml-2">
+                        <Badge variant={outcome.variant} className="ms-2">
                           {outcome.label}
                         </Badge>
                       ) : null}
                     </TableCell>
                     <TableCell className="font-mono text-xs">{row.classCode ?? '—'}</TableCell>
                     <TableCell className="min-w-[260px] text-sm">{row.summary}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       <Button variant="ghost" size="icon" onClick={() => openDetail(row)} aria-label={`View details: ${row.summary}`}>
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -322,7 +322,7 @@ function SubmissionsTab({ timeZone, faculty, classes, overdueAfterHours }) {
                 onClick={() => setFilter('status')(filters.status === status ? '' : status)}
                 aria-pressed={filters.status === status}
                 className={cn(
-                  'w-full rounded-lg border bg-card p-4 text-left transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  'w-full rounded-lg border bg-card p-4 text-start transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   filters.status === status && 'ring-2 ring-ring'
                 )}
               >
@@ -384,7 +384,7 @@ function SubmissionsTab({ timeZone, faculty, classes, overdueAfterHours }) {
                     <TableCell>
                       <span className="font-mono text-xs">{row.code}</span>
                       {row.archived ? (
-                        <Badge variant="secondary" className="ml-2">
+                        <Badge variant="secondary" className="ms-2">
                           Archived
                         </Badge>
                       ) : null}
