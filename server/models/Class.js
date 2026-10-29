@@ -61,9 +61,13 @@ const classSchema = new mongoose.Schema(
       trim: true,
       match: [/^[A-Za-z0-9 -]{1,20}$/, 'Semester must be 1-20 characters'],
     },
+    // Weekly meetings: one entry per day, each with its own start and end.
     schedule: {
-      type: scheduleSchema,
-      required: [true, 'Schedule is required'],
+      type: [scheduleSchema],
+      validate: [
+        { validator: (v) => Array.isArray(v) && v.length > 0, message: 'Schedule needs at least one day' },
+        { validator: (v) => new Set(v.map((m) => m.day)).size === v.length, message: 'Each day can only be scheduled once' },
+      ],
     },
     // Optional: a class can be created before it is staffed, and the admin UI
     // renders such classes with an "Unassigned" badge until assign-faculty runs.
@@ -137,5 +141,23 @@ classSchema.pre('save', async function (next) {
   }
 });
 
+/**
+ * Weekly meetings of a class, in day order. Also accepts the legacy single
+ * `{ day, startTime, endTime }` object still found on lean reads of old rows.
+ */
+const meetingsOf = (schedule) => {
+  const list = Array.isArray(schedule) ? schedule : schedule?.day ? [schedule] : [];
+  return [...list].sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day));
+};
+
+/** The meeting held on a weekday name, or null. */
+const meetingOn = (schedule, day) => meetingsOf(schedule).find((m) => m.day === day) ?? null;
+
+/** "Monday 09:00-10:30, Wednesday 13:00-14:30" (audit summaries). */
+const describeSchedule = (schedule) => meetingsOf(schedule).map((m) => `${m.day} ${m.startTime}-${m.endTime}`).join(', ');
+
 module.exports = mongoose.model('Class', classSchema);
 module.exports.DAYS = DAYS;
+module.exports.meetingsOf = meetingsOf;
+module.exports.meetingOn = meetingOn;
+module.exports.describeSchedule = describeSchedule;

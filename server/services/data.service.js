@@ -68,7 +68,9 @@ const DATASETS = {
     key: 'code',
     columns: ['code', 'name', 'department', 'semester', 'day', 'start_time', 'end_time', 'room', 'capacity', 'faculty_employee_id'],
     required: ['code', 'name', 'department', 'semester', 'day', 'start_time', 'end_time'],
-    example: [['CS-499', 'Capstone Project', 'Computer Science', 'Fall 2026', 'Thursday', '14:00', '16:00', 'B-204', '35', 'EMP-1001']],
+    // Several days go in one cell separated by ";" (Monday;Wednesday); give one
+    // time for all of them or one per day in the same order.
+    example: [['CS-499', 'Capstone Project', 'Computer Science', 'Fall 2026', 'Monday;Thursday', '14:00', '16:00;15:30', 'B-204', '35', 'EMP-1001']],
   },
   attendance: {
     label: 'Attendance',
@@ -133,7 +135,7 @@ const exportRows = async (user, dataset, query = {}) => {
     return {
       columns: [...DATASETS.classes.columns, 'enrolled', 'archived'],
       rows: rows.map((c) => [
-        c.code, c.name, c.department, c.semester, c.schedule?.day, c.schedule?.startTime, c.schedule?.endTime,
+        c.code, c.name, c.department, c.semester, ...scheduleCells(c.schedule),
         c.room, c.capacity, c.faculty?.employeeId ?? '', (c.students || []).length, yesNo(c.archivedAt),
       ]),
     };
@@ -356,6 +358,36 @@ const applyPeople = async (results, kind) => {
 
 /* -- classes -- */
 
+/** day / start_time / end_time cells for a class's weekly meetings ("Monday;Wednesday"). */
+const scheduleCells = (schedule) => {
+  const meetings = Class.meetingsOf(schedule);
+  return ['day', 'startTime', 'endTime'].map((key) => meetings.map((m) => m[key]).join(';'));
+};
+
+/**
+ * Reads the day / start_time / end_time cells back into meetings. A single
+ * time applies to every listed day; otherwise there is one time per day.
+ */
+const parseScheduleCells = (v, errors) => {
+  const split = (cell) => (cell || '').split(';').map((x) => x.trim()).filter(Boolean);
+  const days = split(v.day).map((name) => DAYS.find((d) => d.toLowerCase() === name.toLowerCase()) ?? null);
+  const starts = split(v.start_time);
+  const ends = split(v.end_time);
+  const before = errors.length;
+
+  if (!days.length || days.includes(null)) errors.push(`day must be one or more of ${DAYS.join(', ')} separated by ;`);
+  else if (new Set(days).size !== days.length) errors.push('each day can only be listed once');
+  [['start_time', starts], ['end_time', ends]].forEach(([field, times]) => {
+    if (!times.length || times.some((t) => !TIME_RE.test(t))) errors.push(`${field} must be HH:mm (24-hour)`);
+    else if (times.length !== 1 && times.length !== days.length) errors.push(`${field} needs one time, or one per day`);
+  });
+  if (errors.length > before) return null;
+
+  const meetings = days.map((day, i) => ({ day, startTime: starts[starts.length === 1 ? 0 : i], endTime: ends[ends.length === 1 ? 0 : i] }));
+  meetings.filter((m) => m.endTime <= m.startTime).forEach((m) => errors.push(`end_time must be after start_time (${m.day})`));
+  return meetings;
+};
+
 const validateClasses = async (rows) => {
   const codes = rows.map((r) => (r.values.code || '').toUpperCase());
   const empIds = rows.map((r) => (r.values.faculty_employee_id || '').toUpperCase()).filter(Boolean);
@@ -376,11 +408,7 @@ const validateClasses = async (rows) => {
     if (!v.department) out.errors.push('department is required');
     if (!v.semester) out.errors.push('semester is required');
     lengthCheck(out, 'semester', 20);
-    const day = DAYS.find((d) => d.toLowerCase() === (v.day || '').toLowerCase());
-    if (!day) out.errors.push(`day must be one of ${DAYS.join(', ')}`);
-    if (!TIME_RE.test(v.start_time || '')) out.errors.push('start_time must be HH:mm (24-hour)');
-    if (!TIME_RE.test(v.end_time || '')) out.errors.push('end_time must be HH:mm (24-hour)');
-    if (TIME_RE.test(v.start_time || '') && TIME_RE.test(v.end_time || '') && v.end_time <= v.start_time) out.errors.push('end_time must be after start_time');
+    const schedule = parseScheduleCells(v, out.errors);
     lengthCheck(out, 'room', 30);
     if (v.capacity && !(Number.isInteger(Number(v.capacity)) && Number(v.capacity) >= 1 && Number(v.capacity) <= 500)) out.errors.push('capacity must be a whole number from 1 to 500');
 
@@ -397,7 +425,7 @@ const validateClasses = async (rows) => {
 
     if (!out.errors.length) {
       out.action = current ? 'update' : 'create';
-      out.target = { id: current ? String(current._id) : null, facultyId, day, currentFaculty: current?.faculty ? String(current.faculty) : null };
+      out.target = { id: current ? String(current._id) : null, facultyId, schedule, currentFaculty: current?.faculty ? String(current.faculty) : null };
       if (current && facultyId && current.faculty && String(current.faculty) !== facultyId) out.warnings.push('Changes the assigned teacher');
     }
     return out;
@@ -417,9 +445,7 @@ const applyClasses = async (results, actor) => {
         code: v.code.toUpperCase(),
         department: v.department,
         semester: v.semester,
-        day: r.target.day,
-        startTime: v.start_time,
-        endTime: v.end_time,
+        schedule: r.target.schedule,
         room: (v.room || '').toUpperCase(),
       };
       if (r.action === 'create') {

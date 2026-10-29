@@ -273,7 +273,7 @@ const seedDatabase = async () => {
       code: template.code,
       department: template.department,
       semester: SEMESTER,
-      schedule: { day, startTime, endTime },
+      schedule: [{ day, startTime, endTime }],
       faculty: owner._id,
       students: [],
     });
@@ -326,7 +326,7 @@ const seedDatabase = async () => {
   createdClasses.forEach((classDoc) => {
     // One class leaves last week's session unsubmitted so the Activity Log
     // shows a "missing" submission next to on-time and late ones.
-    const dates = classDates(classDoc.schedule.day).filter(
+    const dates = classDates(classDoc.schedule[0].day).filter(
       (date, index) => !(classDoc.code === MISSING_SUBMISSION_CLASS && index === 1)
     );
     classDoc.students.forEach((studentId) => {
@@ -392,7 +392,7 @@ const seedDatabase = async () => {
     const key = `${record.class}|${record.date.toISOString()}`;
     if (!submittedAtByKey.has(key)) {
       const classDoc = classById.get(String(record.class));
-      const end = zonedTime(record.date, classDoc.schedule.endTime);
+      const end = zonedTime(record.date, classDoc.schedule[0].endTime);
       const offsetHours = rng() < 0.12 ? 2 + rng() * 40 : -(5 + rng() * 40) / 60;
       const at = new Date(Math.min(end.getTime() + offsetHours * 3600 * 1000, Date.now()));
       submittedAtByKey.set(key, at);
@@ -414,7 +414,7 @@ const seedDatabase = async () => {
     const rows = uniqueRecords.filter((r) => String(r.class) === classId && r.date.getTime() === date.getTime());
     const count = (status) => rows.filter((r) => r.status === status).length;
     const actorUser = userById.get(String(markedByByClass.get(classId)));
-    const deadline = zonedTime(date, classDoc.schedule.endTime);
+    const deadline = zonedTime(date, classDoc.schedule[0].endTime);
     return {
       actor: { id: actorUser._id, name: actorUser.name, role: 'faculty' },
       action: 'attendance.submitted',
@@ -505,7 +505,7 @@ const seedDatabase = async () => {
     else bands.red += 1;
   });
 
-  const classesToday = createdClasses.filter((c) => c.schedule.day === weekday);
+  const classesToday = createdClasses.filter((c) => c.schedule.some((m) => m.day === weekday));
 
   console.log('\n--- Seed complete ---');
   console.log(`Users:        ${userDocs.length} (admin 1, faculty ${facultyDocs.length}, students ${studentDocs.length})`);

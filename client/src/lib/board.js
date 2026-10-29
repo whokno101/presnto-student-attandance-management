@@ -1,4 +1,4 @@
-import { DAYS } from '@/lib/constants'
+import { DAYS, meetingsOf } from '@/lib/constants'
 
 const pad = (n) => String(n).padStart(2, '0')
 export const ymdLocal = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
@@ -16,12 +16,12 @@ const statusOf = (date, startTime, endTime, now) => {
 }
 
 /**
- * Board rows for the week ahead, ranked by start: each class's weekly meeting
+ * Board rows for the week ahead, ranked by start: each class's weekly meetings
  * (its next occurrence, today included even once it has ended) merged with
  * dated sessions from the schedule. A dated session wins over the weekly
  * meeting for the same class on the same day.
  *
- * classes: class DTOs ({ id, code, name, schedule: { day, startTime, endTime }, room, faculty })
+ * classes: class DTOs ({ id, code, name, schedule: [{ day, startTime, endTime }], room, faculty })
  * sessions: schedule DTOs ({ id, classId, classCode, className, instructor, room, date, startTime, endTime })
  * action(meeting) -> { to, label } | undefined, for a per-row link
  */
@@ -47,24 +47,26 @@ export function weekBoardRows(classes = [], sessions = [], { now = new Date(), l
   }
 
   for (const c of classes) {
-    const dayIndex = DAYS.indexOf(c.schedule?.day)
-    if (dayIndex === -1 || !c.schedule?.startTime) continue
-    // DAYS starts on Monday; Date#getDay() starts on Sunday.
-    const offset = ((dayIndex + 1) % 7 - now.getDay() + 7) % 7
-    const date = ymdLocal(addDays(now, offset))
-    const key = `${c.id}|${date}`
-    if (meetings.has(key)) continue
-    meetings.set(key, {
-      id: `class-${c.id}`,
-      classId: c.id,
-      date,
-      startTime: c.schedule.startTime,
-      endTime: c.schedule.endTime,
-      code: c.code,
-      title: c.name,
-      detail: c.faculty?.name ?? undefined,
-      hall: c.room || '—',
-    })
+    for (const weekly of meetingsOf(c.schedule)) {
+      const dayIndex = DAYS.indexOf(weekly.day)
+      if (dayIndex === -1 || !weekly.startTime) continue
+      // DAYS starts on Monday; Date#getDay() starts on Sunday.
+      const offset = ((dayIndex + 1) % 7 - now.getDay() + 7) % 7
+      const date = ymdLocal(addDays(now, offset))
+      const key = `${c.id}|${date}`
+      if (meetings.has(key)) continue
+      meetings.set(key, {
+        id: `class-${c.id}-${weekly.day}`,
+        classId: c.id,
+        date,
+        startTime: weekly.startTime,
+        endTime: weekly.endTime,
+        code: c.code,
+        title: c.name,
+        detail: c.faculty?.name ?? undefined,
+        hall: c.room || '—',
+      })
+    }
   }
 
   const rows = [...meetings.values()]

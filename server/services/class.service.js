@@ -9,6 +9,8 @@ const { parsePagination, buildPagination, escapeRegex } = require('../utils/quer
 const { assertUnique } = require('./shared');
 const { DAY_MS } = require('../utils/dates');
 
+const { meetingsOf, describeSchedule } = Class;
+
 const FACULTY_POPULATE = {
   path: 'faculty',
   select: 'employeeId user',
@@ -26,11 +28,7 @@ const toDTO = (doc) => ({
   code: doc.code,
   department: doc.department,
   semester: doc.semester,
-  schedule: {
-    day: doc.schedule?.day ?? '',
-    startTime: doc.schedule?.startTime ?? '',
-    endTime: doc.schedule?.endTime ?? '',
-  },
+  schedule: meetingsOf(doc.schedule).map(({ day, startTime, endTime }) => ({ day, startTime, endTime })),
   room: doc.room ?? '',
   faculty: doc.faculty
     ? {
@@ -59,12 +57,20 @@ const assertActive = (classDoc) => {
   }
 };
 
-/** Maps the flat form payload (day/startTime/endTime) onto the embedded schedule. */
-const toSchedule = (payload, current) => ({
-  day: payload.day ?? current?.day,
-  startTime: payload.startTime ?? current?.startTime,
-  endTime: payload.endTime ?? current?.endTime,
-});
+/**
+ * The weekly meetings a payload asks for. A `schedule` list replaces them all;
+ * the flat day/startTime/endTime shorthand edits the first meeting.
+ */
+const toSchedule = (payload, current) => {
+  if (payload.schedule) return meetingsOf(payload.schedule);
+  const [first, ...rest] = meetingsOf(current);
+  const merged = {
+    day: payload.day ?? first?.day,
+    startTime: payload.startTime ?? first?.startTime,
+    endTime: payload.endTime ?? first?.endTime,
+  };
+  return meetingsOf([merged, ...rest.filter((m) => m.day !== merged.day)]);
+};
 
 /** `?status=active` (default) | `archived` | `all` */
 const statusFilter = (status) => {
@@ -169,7 +175,7 @@ const update = async (id, payload, actor) => {
 
   const before = {
     ...Object.fromEntries(TRACKED_FIELDS.map((f) => [f, classDoc[f] ?? ''])),
-    schedule: `${classDoc.schedule?.day} ${classDoc.schedule?.startTime}-${classDoc.schedule?.endTime}`,
+    schedule: describeSchedule(classDoc.schedule),
   };
 
   if (payload.name !== undefined) classDoc.name = payload.name;
@@ -178,11 +184,11 @@ const update = async (id, payload, actor) => {
   if (payload.semester !== undefined) classDoc.semester = payload.semester;
   if (payload.room !== undefined) classDoc.room = payload.room;
 
-  if (payload.day !== undefined || payload.startTime !== undefined || payload.endTime !== undefined) {
+  if (payload.schedule || payload.day !== undefined || payload.startTime !== undefined || payload.endTime !== undefined) {
     // Validate the *merged* schedule: a partial update (startTime only) can
     // still produce an end-before-start pair, which the body schema cannot see.
     const nextSchedule = toSchedule(payload, classDoc.schedule);
-    if (nextSchedule.endTime <= nextSchedule.startTime) {
+    if (nextSchedule.some((m) => m.endTime <= m.startTime)) {
       throw ApiError.validation('End time must be after start time', [
         { field: 'endTime', message: 'End time must be after start time' },
       ]);
@@ -194,7 +200,7 @@ const update = async (id, payload, actor) => {
 
   const after = {
     ...Object.fromEntries(TRACKED_FIELDS.map((f) => [f, classDoc[f] ?? ''])),
-    schedule: `${classDoc.schedule?.day} ${classDoc.schedule?.startTime}-${classDoc.schedule?.endTime}`,
+    schedule: describeSchedule(classDoc.schedule),
   };
   const changes = Object.keys(after)
     .filter((field) => String(before[field]) !== String(after[field]))

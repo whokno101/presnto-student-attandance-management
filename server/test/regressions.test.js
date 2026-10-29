@@ -48,6 +48,38 @@ describe('regressions', () => {
     });
   });
 
+  describe('multi-day class schedule', () => {
+    const base = { name: 'Networks', code: 'NET-101', department: 'Computer Science', semester: 'Fall 2026' };
+    const post = (body) => request(app()).post('/api/classes').set('Authorization', `Bearer ${admin}`).send(body);
+
+    it('saves a separate start and end time for each day, in day order', async () => {
+      const res = await post({
+        ...base,
+        schedule: [
+          { day: 'Wednesday', startTime: '13:00', endTime: '14:30' },
+          { day: 'Monday', startTime: '09:00', endTime: '10:30' },
+        ],
+      });
+
+      assert.equal(res.status, 201);
+      assert.deepEqual(res.body.data.schedule, [
+        { day: 'Monday', startTime: '09:00', endTime: '10:30' },
+        { day: 'Wednesday', startTime: '13:00', endTime: '14:30' },
+      ]);
+    });
+
+    it('rejects a repeated day, a day with end before start, and an empty list', async () => {
+      const twice = await post({ ...base, schedule: [{ day: 'Monday', startTime: '09:00', endTime: '10:00' }, { day: 'Monday', startTime: '11:00', endTime: '12:00' }] });
+      assert.equal(twice.status, 400);
+
+      const backwards = await post({ ...base, schedule: [{ day: 'Monday', startTime: '09:00', endTime: '10:00' }, { day: 'Friday', startTime: '11:00', endTime: '10:00' }] });
+      assert.equal(backwards.status, 400);
+      assert.ok(backwards.body.error.details.some((d) => d.field === 'schedule.1.endTime'));
+
+      assert.equal((await post({ ...base, schedule: [] })).status, 400);
+    });
+  });
+
   describe('attendance dates', () => {
     // 12:00 UTC on Oct 29 is already 02:00 on Oct 30 in Kiritimati (UTC+14),
     // so the institution's today is a future date in UTC.

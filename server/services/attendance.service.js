@@ -14,7 +14,7 @@ const Student = require('../models/Student');
 const { ApiError } = require('../utils/apiError');
 const { requireStudentProfile } = require('./access.service');
 const { parsePagination, buildPagination, escapeRegex } = require('../utils/query');
-const { todayInInstitution, ymd } = require('../utils/dates');
+const { todayInInstitution, ymd, weekdayOf } = require('../utils/dates');
 const auditService = require('./audit.service');
 
 const STATUSES = Attendance.STATUSES;
@@ -204,7 +204,8 @@ const auditChanges = async ({ classDoc, day, actor, source, changed, previous, s
 
   if (source === 'manual' || source === 'import') {
     const counts = summarise(saved);
-    const deadline = auditService.deadlineFor(day, classDoc.schedule?.endTime ?? '23:59');
+    const meeting = Class.meetingOn(classDoc.schedule, weekdayOf(day)) ?? Class.meetingsOf(classDoc.schedule)[0];
+    const deadline = auditService.deadlineFor(day, meeting?.endTime ?? '23:59');
     const timeliness = wasSubmitted ? null : new Date() <= deadline ? 'on_time' : 'late';
     entries.push({
       actor,

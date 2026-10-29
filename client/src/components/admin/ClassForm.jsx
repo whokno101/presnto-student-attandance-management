@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import useFormState from '@/hooks/useFormState'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/api'
-import { DAYS, DAY_ABBR, DEPARTMENTS, SEMESTERS, withCurrent } from '@/lib/constants'
+import { DAYS, DAY_ABBR, DEPARTMENTS, SEMESTERS, meetingsOf, withCurrent } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 import { createClass, updateClass } from '@/services/classes'
 
 const CODE_RE = /^[A-Za-z0-9-]{3,15}$/
@@ -23,15 +24,15 @@ const validate = (values) => {
 
   if (!values.department) errors.department = 'Select a department'
   if (!values.semester) errors.semester = 'Select a semester'
-  if (!values.day) errors.day = 'Select a day'
 
   if (values.room && !/^[A-Za-z0-9 -]{1,30}$/.test(values.room.trim())) errors.room = 'Up to 30 letters, numbers, spaces or dashes'
 
-  if (!values.startTime) errors.startTime = 'Start time is required'
-  if (!values.endTime) errors.endTime = 'End time is required'
-  else if (values.startTime && values.endTime <= values.startTime) {
-    errors.endTime = 'End time must be after start time'
-  }
+  if (!values.meetings.length) errors.meetings = 'Pick at least one day'
+  values.meetings.forEach(({ day, startTime, endTime }) => {
+    if (!startTime) errors[`start-${day}`] = 'Start time is required'
+    if (!endTime) errors[`end-${day}`] = 'End time is required'
+    else if (startTime && endTime <= startTime) errors[`end-${day}`] = 'End time must be after start time'
+  })
 
   return errors
 }
@@ -41,9 +42,7 @@ const emptyValues = {
   code: '',
   department: '',
   semester: '',
-  day: '',
-  startTime: '',
-  endTime: '',
+  meetings: [],
   room: '',
 }
 
@@ -60,14 +59,29 @@ export default function ClassForm({ open, onOpenChange, classDoc, onSaved }) {
           code: classDoc.code,
           department: classDoc.department,
           semester: classDoc.semester,
-          day: classDoc.schedule?.day ?? '',
-          startTime: classDoc.schedule?.startTime ?? '',
-          endTime: classDoc.schedule?.endTime ?? '',
+          meetings: meetingsOf(classDoc.schedule),
           room: classDoc.room ?? '',
         }
       : emptyValues,
     validate: validateValues,
   })
+
+  const { meetings } = form.values
+
+  // A newly picked day starts with the times of the last one, since most
+  // classes meet at the same hour; each day can then be adjusted on its own.
+  const toggleDay = (day) => {
+    const next = meetings.some((m) => m.day === day)
+      ? meetings.filter((m) => m.day !== day)
+      : [...meetings, { day, startTime: meetings.at(-1)?.startTime ?? '', endTime: meetings.at(-1)?.endTime ?? '' }]
+    form.setValue('meetings', meetingsOf(next))
+  }
+
+  const setMeetingTime = (day, field, value) =>
+    form.setValue(
+      'meetings',
+      meetings.map((m) => (m.day === day ? { ...m, [field]: value } : m))
+    )
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -81,9 +95,7 @@ export default function ClassForm({ open, onOpenChange, classDoc, onSaved }) {
         code: form.values.code.trim().toUpperCase(),
         department: form.values.department,
         semester: form.values.semester,
-        day: form.values.day,
-        startTime: form.values.startTime,
-        endTime: form.values.endTime,
+        schedule: meetings.map(({ day, startTime, endTime }) => ({ day, startTime, endTime })),
         room: form.values.room.trim().toUpperCase(),
       }
 
@@ -206,45 +218,82 @@ export default function ClassForm({ open, onOpenChange, classDoc, onSaved }) {
         />
       </FormField>
 
-      <FormField label="Day" htmlFor="class-day" required error={form.fieldError('day')}>
-        <Select value={form.values.day || undefined} onValueChange={(value) => form.setValue('day', value)}>
-          <SelectTrigger id="class-day">
-            <SelectValue placeholder="Select day" />
-          </SelectTrigger>
-          <SelectContent>
-            {DAYS.map((day) => (
-              <SelectItem key={day} value={day}>
-                {DAY_ABBR[day]} — {day}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </FormField>
+      <fieldset className="space-y-3 sm:col-span-2">
+        <legend className="text-sm font-medium leading-none">
+          Days
+          <span className="ms-0.5 text-destructive" aria-hidden="true">
+            *
+          </span>
+          <span className="sr-only"> (required)</span>
+        </legend>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Meeting days">
+          {DAYS.map((day) => {
+            const on = meetings.some((m) => m.day === day)
+            return (
+              <button
+                key={day}
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggleDay(day)}
+                className={cn(
+                  'rounded-md border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  on ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-accent'
+                )}
+              >
+                <span aria-hidden="true">{DAY_ABBR[day]}</span>
+                <span className="sr-only">{day}</span>
+              </button>
+            )
+          })}
+        </div>
+        {form.fieldError('meetings') ? (
+          <p role="alert" className="text-xs font-medium text-destructive">
+            {form.fieldError('meetings')}
+          </p>
+        ) : null}
 
-      <FormField
-        label="Start Time"
-        htmlFor="class-start"
-        required
-        error={form.fieldError('startTime')}
-      >
-        <Input
-          id="class-start"
-          type="time"
-          value={form.values.startTime}
-          onChange={(event) => form.setValue('startTime', event.target.value)}
-          onBlur={() => form.markTouched('startTime')}
-        />
-      </FormField>
-
-      <FormField label="End Time" htmlFor="class-end" required error={form.fieldError('endTime')}>
-        <Input
-          id="class-end"
-          type="time"
-          value={form.values.endTime}
-          onChange={(event) => form.setValue('endTime', event.target.value)}
-          onBlur={() => form.markTouched('endTime')}
-        />
-      </FormField>
+        {meetings.map(({ day, startTime, endTime }) => (
+          <div key={day} className="grid grid-cols-[3rem_1fr_1fr] items-start gap-3 rounded-md border p-3">
+            <span className="pt-8 text-sm font-medium">{DAY_ABBR[day]}</span>
+            <FormField
+              label={
+                <>
+                  Start<span className="sr-only"> time on {day}</span>
+                </>
+              }
+              htmlFor={`class-start-${day}`}
+              required
+              error={form.fieldError(`start-${day}`)}
+            >
+              <Input
+                id={`class-start-${day}`}
+                type="time"
+                value={startTime}
+                onChange={(event) => setMeetingTime(day, 'startTime', event.target.value)}
+                onBlur={() => form.markTouched(`start-${day}`)}
+              />
+            </FormField>
+            <FormField
+              label={
+                <>
+                  End<span className="sr-only"> time on {day}</span>
+                </>
+              }
+              htmlFor={`class-end-${day}`}
+              required
+              error={form.fieldError(`end-${day}`)}
+            >
+              <Input
+                id={`class-end-${day}`}
+                type="time"
+                value={endTime}
+                onChange={(event) => setMeetingTime(day, 'endTime', event.target.value)}
+                onBlur={() => form.markTouched(`end-${day}`)}
+              />
+            </FormField>
+          </div>
+        ))}
+      </fieldset>
     </FormDialog>
   )
 }
