@@ -1,5 +1,8 @@
 import { formatSchedule } from '@/lib/constants'
+import { useRef } from 'react'
+
 import { cn } from '@/lib/utils'
+import useStackLabels from '@/hooks/useStackLabels'
 
 /**
  * Classes as timetable rows (My Classes, Enroll): code, course, slot, room,
@@ -8,10 +11,12 @@ import { cn } from '@/lib/utils'
  */
 export default function ClassRows({ classes, badge, action, caption }) {
   const showRoom = classes.some((c) => c.room)
+  const tableRef = useRef(null)
+  useStackLabels(tableRef)
 
   return (
     <div className="overflow-x-auto rounded-md border bg-card">
-      <table className="w-full min-w-[44rem] border-collapse text-start text-sm tabular-nums">
+      <table ref={tableRef} className="table-stack w-full border-collapse sm:min-w-[44rem] text-start text-sm tabular-nums">
         {caption ? <caption className="sr-only">{caption}</caption> : null}
         <thead>
           <tr className="border-b font-display text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">

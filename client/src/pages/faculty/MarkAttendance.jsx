@@ -317,10 +317,10 @@ export default function MarkAttendance() {
                       </Badge>
                     ) : null}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="stack-full">
                     <div className="flex justify-end">
                       <div
-                        className="inline-flex rounded-md border p-0.5"
+                        className="flex w-full rounded-md border p-0.5 sm:inline-flex sm:w-auto"
                         role="group"
                         aria-label={`Attendance for ${student.name}`}
                       >
@@ -334,7 +334,7 @@ export default function MarkAttendance() {
                               aria-label={`${STATUS_META[status].label} for ${student.name}`}
                               onClick={() => setStatus(student.id, status)}
                               className={cn(
-                                'rounded px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+                                'flex-1 rounded px-2.5 py-2 text-xs font-medium transition-colors sm:flex-none sm:py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
                                 active
                                   ? STATUS_META[status].active
                                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'

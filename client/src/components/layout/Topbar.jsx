@@ -55,7 +55,7 @@ export default function Topbar({ onOpenSidebar, menuButtonRef }) {
         <BoardClock showDay={false} className="mt-1 block text-muted-foreground lg:hidden" />
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-1 sm:gap-3">
         <ThemeToggle />
         <NotificationBell />
         <div className="hidden text-end sm:block">
@@ -64,7 +64,7 @@ export default function Topbar({ onOpenSidebar, menuButtonRef }) {
         </div>
 
         <div
-          className="flex h-9 w-9 items-center justify-center rounded-md bg-foreground font-display text-sm font-bold tracking-wider text-background"
+          className="hidden h-9 w-9 items-center justify-center rounded-md bg-foreground sm:flex font-display text-sm font-bold tracking-wider text-background"
           aria-hidden="true"
           title={user?.name}
         >

@@ -193,7 +193,7 @@ export default function AttendanceOverview() {
           <CardDescription>Attendance rate and roster size for every class on the timetable.</CardDescription>
         </CardHeader>
         <CardContent className="p-0 sm:p-0">
-          <Table>
+          <Table stack={false}>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className="ps-4 sm:ps-6">Code</TableHead>
