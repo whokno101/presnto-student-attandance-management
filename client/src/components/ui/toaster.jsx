@@ -11,9 +11,9 @@ export function Toaster() {
       {toasts.map(({ id, title, description, action, ...props }) => (
         <Toast key={id} {...props}>
           {props.variant === 'success' ? (
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 self-start text-shell-ok" aria-hidden="true" />
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 self-start text-success" aria-hidden="true" />
           ) : props.variant === 'destructive' ? (
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 self-start text-shell-alert" aria-hidden="true" />
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 self-start text-destructive" aria-hidden="true" />
           ) : null}
           <div className="grid flex-1 gap-1">
             {title ? <ToastTitle>{title}</ToastTitle> : null}

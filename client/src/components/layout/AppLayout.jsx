@@ -32,7 +32,7 @@ export default function AppLayout() {
         Skip to main content
       </a>
 
-      <aside className="hidden w-64 shrink-0 bg-shell lg:block">
+      <aside className="hidden w-64 shrink-0 border-e border-shell-border bg-shell lg:block">
         <div className="sticky top-0 h-screen">
           <Sidebar />
         </div>
@@ -40,7 +40,7 @@ export default function AppLayout() {
 
       <DialogPrimitive.Root open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-shell/70 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 lg:hidden" />
+          <DialogPrimitive.Overlay className="fixed inset-0 z-40 bg-scrim/70 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 lg:hidden" />
           <DialogPrimitive.Content
             className="fixed inset-y-0 start-0 z-50 w-64 bg-shell shadow-xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left rtl:data-[state=closed]:slide-out-to-right rtl:data-[state=open]:slide-in-from-right lg:hidden"
             aria-describedby={undefined}

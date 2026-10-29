@@ -96,7 +96,7 @@ export default function AdminDashboard() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(18rem,1fr)]">
         <Card>
-          <CardHeader className="flex-row items-baseline justify-between space-y-0 pb-2">
+          <CardHeader className="flex-row flex-wrap items-baseline justify-between gap-x-4 gap-y-1 space-y-0 pb-2">
             <CardTitle>This week’s sessions</CardTitle>
             <BoardClock className="text-muted-foreground" />
           </CardHeader>

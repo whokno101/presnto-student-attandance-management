@@ -1,32 +1,33 @@
 ---
 name: Presnto
-description: Attendance for a university, set as a departures board on an ink shell.
+description: Attendance for a university, set as a departures board.
 colors:
-  background: "hsl(216 12% 93%)"
+  background: "hsl(0 0% 100%)"
   foreground: "hsl(216 19% 5%)"
   card: "hsl(0 0% 100%)"
-  muted: "hsl(214 12% 89%)"
-  muted-foreground: "hsl(212 7% 35%)"
+  muted: "hsl(60 5% 95%)"
+  muted-foreground: "hsl(60 3% 34%)"
   primary: "hsl(216 19% 5%)"
   primary-foreground: "hsl(0 0% 100%)"
   primary-hover: "hsl(213 16% 18%)"
-  secondary: "hsl(214 12% 88%)"
+  secondary: "hsl(60 5% 93%)"
   signal: "hsl(50 100% 50%)"
   signal-foreground: "hsl(216 19% 5%)"
-  shell: "hsl(216 19% 5%)"
-  shell-foreground: "hsl(60 9% 95%)"
-  shell-muted: "hsl(210 6% 66%)"
-  shell-border: "hsl(213 13% 19%)"
-  shell-accent: "hsl(213 16% 13%)"
-  shell-ok: "hsl(145 55% 55%)"
-  shell-alert: "hsl(4 90% 72%)"
+  shell: "hsl(0 0% 100%)"
+  shell-foreground: "hsl(216 19% 5%)"
+  shell-muted: "hsl(60 3% 34%)"
+  shell-border: "hsl(60 5% 87%)"
+  shell-accent: "hsl(60 5% 94%)"
+  shell-ok: "hsl(145 61% 28%)"
+  shell-alert: "hsl(0 66% 45%)"
+  scrim: "hsl(216 19% 5%)"
   success: "hsl(145 61% 28%)"
   warning: "hsl(26 90% 34%)"
   destructive: "hsl(0 66% 45%)"
   destructive-hover: "hsl(0 68% 37%)"
   info: "hsl(214 45% 38%)"
-  border: "hsl(216 10% 83%)"
-  input: "hsl(214 8% 50%)"
+  border: "hsl(60 5% 87%)"
+  input: "hsl(60 3% 50%)"
   ring: "hsl(216 19% 5%)"
   chart-1: "hsl(213 20% 22%)"
   chart-2: "hsl(42 100% 40%)"
@@ -40,7 +41,15 @@ colors:
   primary-dark: "hsl(60 9% 95%)"
   primary-foreground-dark: "hsl(216 19% 5%)"
   primary-hover-dark: "hsl(60 5% 80%)"
-  shell-dark: "hsl(216 22% 3%)"
+  shell-dark: "hsl(216 19% 5%)"
+  shell-foreground-dark: "hsl(60 9% 95%)"
+  shell-muted-dark: "hsl(210 6% 66%)"
+  shell-border-dark: "hsl(213 13% 19%)"
+  shell-accent-dark: "hsl(213 16% 11%)"
+  shell-ok-dark: "hsl(145 55% 55%)"
+  shell-alert-dark: "hsl(4 90% 72%)"
+  topbar: "hsl(0 0% 100%)"
+  topbar-dark: "hsl(216 19% 5%)"
   success-dark: "hsl(145 55% 52%)"
   warning-dark: "hsl(30 95% 60%)"
   destructive-dark: "hsl(0 80% 67%)"
@@ -190,14 +199,14 @@ components:
 
 **Creative North Star: "The Departures Board"**
 
-Attendance runs on a timetable, so Presnto is set like a station: an ink shell that never changes with the theme, a cool panel ground, white surfaces, and one signal colour that lights only when something is live or has just changed. Sessions are ranked by start time in hairline-ruled rows with a Time, Course, Hall and Status column; figures sit in strips like the GATE / BOARDING / SEAT row of a boarding pass; a student's check-in and the sign-in form are segmented passes torn along dashed perforations.
+Attendance runs on a timetable, so Presnto is set like a station: one ground per theme (a single white sheet by day, an ink board with slate cards by night), ink actions, and one signal colour that lights only when something is live or has just changed. Sessions are ranked by start time in hairline-ruled rows with a Time, Course, Hall and Status column; figures sit in strips like the GATE / BOARDING / SEAT row of a boarding pass; a student's check-in and the sign-in form are segmented passes torn along dashed perforations.
 
 Density is operational, not decorative. Labels are condensed capitals with wide tracking, every time, code, room and rate is set in tabular monospace, and status is always spelled out as a word. Colour reinforces a status; it never carries it alone. Surfaces are flat and ruled; depth is reserved for things that physically lift off the board (the pass, dialogs, toasts).
 
 The system is built for Arabic from the start: Noto Kufi Arabic follows each Latin face in the stacks, and layout uses logical start/end properties so the whole board mirrors under `dir="rtl"`.
 
 **Key Characteristics:**
-- Ink shell (sidebar, login ground, toasts) in both themes; the theme only changes the content plane.
+- The shell (sidebar, login ground) follows the theme and shares the page ground; only the scrim (dialog backdrop, lift shadows, camera viewport) stays ink in both themes.
 - Signal yellow for live or changed state only, held until the data moves on.
 - Ruled rows and summary strips instead of card grids.
 - Barlow Condensed capitals for labels and controls, Barlow for prose, JetBrains Mono for every number.
@@ -207,7 +216,7 @@ The system is built for Arabic from the start: Noto Kufi Arabic follows each Lat
 
 ## Colors
 
-A near-black ink and cool steel neutral system with a single saturated signal yellow and four muted status hues.
+A near-black ink and warm-neutral grey system with a single saturated signal yellow and four muted status hues.
 
 ### Primary
 - **Timetable Ink** (`primary`, ≈ #0A0C0F): the action colour on light. Primary buttons, the focus ring, the user initials block, text selection. In dark theme the primary inverts to **Panel White** (`primary-dark`, ≈ #F3F3F1) with ink text, so the strongest action is always the brightest object on the plane.
@@ -216,20 +225,21 @@ A near-black ink and cool steel neutral system with a single saturated signal ye
 - **Signal Yellow** (`signal`, #FFD400): the only yellow in the app, always with ink text (`signal-foreground`). Used for the board's live row chip ("In session", "Check-in · 104/140"), a changed hall chip, the check-in pass's IN SESSION chip, the camera scan line, and the `signal-in` flash when a row or a check-in result lands. Identical in both themes.
 
 ### Tertiary
-- **Status hues**, light / dark: **Present Green** (`success` / `success-dark`), **Late Amber** (`warning` / `warning-dark`), **Absent Red** (`destructive` / `destructive-dark`), **Excused Blue** (`info` / `info-dark`). Attendance statuses and rate bands map onto these: Present, On track (≥ 90%) green; Late, Watch (75-89%) amber; Absent, At risk (< 75%) red; Excused blue. On the ink shell the board uses the brighter **Shell Ok** and **Shell Alert** for closed and low-attendance rows.
+- **Status hues**, light / dark: **Present Green** (`success` / `success-dark`), **Late Amber** (`warning` / `warning-dark`), **Absent Red** (`destructive` / `destructive-dark`), **Excused Blue** (`info` / `info-dark`). Attendance statuses and rate bands map onto these: Present, On track (≥ 90%) green; Late, Watch (75-89%) amber; Absent, At risk (< 75%) red; Excused blue. On the shell the board uses **Shell Ok** and **Shell Alert** (the status hues on light, brighter on dark) for closed and low-attendance rows.
 
 ### Neutral
-- **Departure Ink** (`shell`, ≈ #0A0C0F; `shell-dark` ≈ #060709): the shell ground behind the sidebar, the login board, toasts and the dialog scrim.
-- **Board Slate** (`shell-accent`) and **Shell Rule** (`shell-border`): hovered nav items and hairlines on ink.
-- **Steel** (`shell-muted` on ink, `muted-foreground` on light): secondary text, column heads, field labels, muted board statuses.
-- **Panel Ground** (`background`, ≈ #EBEDEF): the light app ground; white **Card** (`card`) surfaces sit on it. In dark the ground is ink and cards are **Board Slate Raised** (`card-dark`).
+- **Shell** (`shell`, white on light; `shell-dark`, Departure Ink ≈ #0A0C0F): the ground behind the sidebar and the login board. Toasts are cards.
+- **Scrim** (`scrim`, Departure Ink in both themes): the dialog and drawer backdrop, the tint of lift shadows, and the camera viewport.
+- **Board Slate** (`shell-accent`) and **Shell Rule** (`shell-border`): hovered nav items and hairlines on the shell.
+- **Steel** (`shell-muted` on the shell, `muted-foreground` on content): secondary text, column heads, field labels, muted board statuses.
+- **Sheet White** (`background`, `card`, `shell`, `topbar`: #FFFFFF): light theme is one white sheet. Sidebar, top bar, page and cards share it and are told apart only by warm-neutral hairlines (`border`, ≈ #DFDFDB) and ink actions, never by a second grey ground. Muted tints (`muted`, `secondary`, `accent`) are faint warm neutrals for hover and table heads, not for surfaces. In dark the ground is ink and cards are **Board Slate Raised** (`card-dark`).
 - **Hairline** (`border`) for every rule; **Control Edge** (`input`, darker, ≥ 3:1) for form control borders.
 - **Chart series** (`chart-1`..`chart-5`): ink, amber, green, blue, red; sparklines and charts only, never the only signal. In dark theme `chart-2` currently resolves to the signal value; treat that as a data series colour, not as a live marker, and do not reuse it elsewhere.
 
 ### Named Rules
 **The Signal Rule.** Signal yellow marks live or changed state and nothing else: never decoration, never a brand accent, never a generic highlight or category colour. If nothing on the screen is live or has changed, no yellow appears.
 
-**The Ink Shell Rule.** The shell (sidebar, login ground, toasts, scrim) is ink in both themes. Light and dark change the content plane, not the shell.
+**The Shared Ground Rule.** The shell (sidebar, login ground) takes the page ground in both themes, so light and dark change the whole screen. Only the scrim stays ink.
 
 **The Word-First Rule.** Every status is a word (Present, Late, Absent, Excused; On track, Watch, At risk; In session, Next, Ended, Scheduled). Colour only reinforces it. All token pairs are checked by `npm run check:contrast` against WCAG 2.1 AA.
 
@@ -258,7 +268,7 @@ A near-black ink and cool steel neutral system with a single saturated signal ye
 
 ## Layout
 
-The app is a fixed ink sidebar (256px) beside a content plane capped at 1600px, padded 16px / 24px / 32px at base / sm / lg. Below lg (1024px) the sidebar becomes an ink drawer from the start edge and the top bar shows the page title and clock. The 64px top bar is white (card) with a hairline under it.
+The app is a fixed shell sidebar (256px) beside a content plane capped at 1600px, padded 16px / 24px / 32px at base / sm / lg. Below lg (1024px) the sidebar becomes a shell drawer over the ink scrim from the start edge and the top bar shows the page title and clock. The 64px top bar is white with a hairline under it on light; on dark it takes the shell tone, so sidebar, top bar and page ground read as one ink plane and only cards lift.
 
 Content is composed as ruled lists, not tiles. The board and class lists are tables with a hairline under every row (row padding 14px, 10px dense; class rows 12px x 16px). Summary figures sit in a single bordered strip divided by hairlines (cells 16px x 20px, auto-fit at 9rem minimum, two columns on phones). Dashboard home pairs a 2:1 board-and-actions grid at xl.
 
@@ -268,7 +278,7 @@ All direction-sensitive spacing and positioning uses logical properties (`ps/pe`
 
 ## Elevation & Depth
 
-Flat by default. Surfaces separate by tone (panel ground vs white card, ink shell vs content) and by 1px hairlines, not shadows. Shadow appears only on objects that lift off the board: the pass, dialogs, toasts, and Radix popovers. Every lift is a long, soft, negatively spread drop tinted with ink.
+Flat by default. On light, surfaces separate only by 1px hairlines (one white sheet); on dark, by tone (ink ground vs slate card) and hairlines, not shadows. Shadow appears only on objects that lift off the board: the pass, dialogs, toasts, and Radix popovers. Every lift is a long, soft, negatively spread drop tinted with ink.
 
 ### Shadow Vocabulary
 - **Pass lift** (`box-shadow: 0 32px 80px -32px rgb(0 0 0 / 0.55)`; 0.75 alpha on the ink login ground): the sign-in and check-in pass.
@@ -300,7 +310,7 @@ Condensed capitals on flat fills; they press down 1px when clicked.
 
 ### Cards / Containers
 - **Corner Style:** 4px.
-- **Background:** `card` (white on light, raised slate on dark) on the panel ground.
+- **Background:** `card` (white with a hairline on light, raised slate on dark).
 - **Shadow Strategy:** none (see Elevation).
 - **Border:** 1px hairline.
 - **Internal Padding:** 20px; title row then content, both at 20px.
@@ -313,9 +323,9 @@ Condensed capitals on flat fills; they press down 1px when clicked.
 - **Labels:** condensed capitals at 0.8rem with 0.12em tracking (0.14em on the pass), in steel.
 
 ### Navigation
-- **Sidebar:** ink shell, 256px. The header holds the logo with an "Attendance" subtitle, then the role in condensed capitals over the board clock, each band closed by a shell hairline.
-- **Items:** condensed capitals at 0.98rem, steel text, 4px corners, 8px x 12px padding, a 16px lucide icon. Hover: board slate fill and panel-white text. **Active:** a solid panel-white panel with ink text, a ticket pulled from the board. Never yellow.
-- **Top bar:** 64px white bar with theme toggle, notifications, name and email, an initials block in ink, and an outline Sign out.
+- **Sidebar:** shell ground, 256px. The header holds the logo with an "Attendance" subtitle, then the role in condensed capitals over the board clock, each band closed by a shell hairline.
+- **Items:** condensed capitals at 0.98rem, steel text, 4px corners, 8px x 12px padding, a 16px lucide icon. Hover: `shell-accent` fill and `shell-foreground` text. **Active:** an inverted block, ink with white text on light and panel-white with ink text on dark, a ticket pulled from the board. Never yellow.
+- **Top bar:** 64px bar (white on light, shell ink on dark) with theme toggle, notifications, name and email, an initials block in ink, and an outline Sign out.
 - **Tabs:** condensed capitals over a hairline; the active tab takes a 2px foreground underline.
 
 ### Departures Board (signature)
@@ -326,6 +336,8 @@ A table of sessions ranked by start time: Time (mono, with a small Today / Tomor
 ### Pass (signature)
 A white segmented pass with 12px corners and the pass lift: header segment (heading and board clock), dashed perforation with notches, body segment, and a further perforated segment for results or demo accounts. Pass fields are a small condensed caption over a mono value, like GATE / SEAT. A successful check-in result lands with `signal-in`.
 
+The sign-in pass is a full airline boarding pass: an inverted `primary` header band (wordmark, BOARDING PASS), a route row (FROM `LGN` → TO the role code, mono 2.5rem, dotted line with a plane between), a DATE / TIME / PASSENGER strip, the form segment headed "Sign in", and a stub with the demo accounts over a `PassBarcode`. The ticket face mirrors the form and is `aria-hidden`: the passenger and barcode follow the typed email, and choosing a demo account prints its destination (ADM / FAC / STU) with `signal-in`.
+
 ### Summary Strip (signature)
 One bordered strip of figures: condensed caption over a mono figure at 1.75rem, an optional steel hint, hairlines between every cell. It replaces rows of metric cards.
 
@@ -333,7 +345,7 @@ One bordered strip of figures: condensed caption over a mono figure at 1.75rem, 
 
 ### Do:
 - **Do** reserve signal yellow (#FFD400, ink text) for live or changed state: the in-session chip, a changed hall, the IN SESSION chip on the pass, the scan line, and the `signal-in` landing.
-- **Do** mark the active nav item as a panel-white panel with ink text on the ink shell.
+- **Do** mark the active nav item as an inverted block (`shell-foreground` ground, `shell` text): ink on light, panel-white on dark.
 - **Do** keep the shell ink in both themes, and invert primary to panel white with ink text in dark.
 - **Do** spell every status as a word and let colour reinforce it.
 - **Do** set times, codes, halls, seats and rates in JetBrains Mono or tabular figures.

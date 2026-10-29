@@ -11,41 +11,49 @@
  */
 @layer base {
   /*
-   * Presnto "Departures" world: an ink-and-slate shell, a cool panel ground,
-   * white surfaces, and signal yellow reserved for live or changed state.
+   * Presnto "Departures" world: light is one white sheet ruled in ink
+   * hairlines with ink actions; dark is an ink board with slate cards. Signal yellow is reserved
+   * for live or changed state.
    */
   :root {
     /* Surfaces */
-    --background: 216 12% 93%;
+    --background: 0 0% 100%;
     --foreground: 216 19% 5%;
     --card: 0 0% 100%;
     --card-foreground: 216 19% 5%;
     --popover: 0 0% 100%;
     --popover-foreground: 216 19% 5%;
-    --muted: 214 12% 89%;
-    --muted-foreground: 212 7% 35%;
+    --muted: 60 5% 95%;
+    --muted-foreground: 60 3% 34%;
 
     /* Brand + actions: ink buttons on light, panel-white on dark */
     --primary: 216 19% 5%;
     --primary-foreground: 0 0% 100%;
     --primary-hover: 213 16% 18%;
-    --secondary: 214 12% 88%;
+    --secondary: 60 5% 93%;
     --secondary-foreground: 216 19% 5%;
-    --accent: 214 12% 89%;
+    --accent: 60 5% 94%;
     --accent-foreground: 216 19% 5%;
 
     /* Signal: live check-in, changed rows, pending attention. Never alone. */
     --signal: 50 100% 50%;
     --signal-foreground: 216 19% 5%;
 
-    /* Shell (sidebar, login board): ink in both themes */
-    --shell: 216 19% 5%;
-    --shell-foreground: 60 9% 95%;
-    --shell-muted: 210 6% 66%;
-    --shell-border: 213 13% 19%;
-    --shell-accent: 213 16% 13%;
-    --shell-ok: 145 55% 55%;
-    --shell-alert: 4 90% 72%;
+    /* Shell (sidebar, login board): shares the page ground in both themes */
+    --shell: 0 0% 100%;
+    --shell-foreground: 216 19% 5%;
+    --shell-muted: 60 3% 34%;
+    --shell-border: 60 5% 87%;
+    --shell-accent: 60 5% 94%;
+    --shell-ok: 145 61% 28%;
+    --shell-alert: 0 66% 45%;
+
+    /* Scrim: dialog backdrop, lift shadows, camera viewport. Ink in both themes. */
+    --scrim: 216 19% 5%;
+
+    /* Top bar: joins the shell in both themes */
+    --topbar: 0 0% 100%;
+    --topbar-border: 60 5% 87%;
 
     /* Status — also used for attendance (Present / Late / Absent / Excused) */
     --success: 145 61% 28%;
@@ -59,8 +67,8 @@
     --info-foreground: 0 0% 100%;
 
     /* Lines + focus */
-    --border: 216 10% 83%;
-    --input: 214 8% 50%;
+    --border: 60 5% 87%;
+    --input: 60 3% 50%;
     --ring: 216 19% 5%;
 
     /* Data series (never the only signal) */
@@ -99,13 +107,17 @@
     --signal: 50 100% 50%;
     --signal-foreground: 216 19% 5%;
 
-    --shell: 216 22% 3%;
+    /* Shell shares the page ground so sidebar, top bar and canvas read as one plane */
+    --shell: 216 19% 5%;
     --shell-foreground: 60 9% 95%;
     --shell-muted: 210 6% 66%;
-    --shell-border: 213 13% 16%;
+    --shell-border: 213 13% 19%;
     --shell-accent: 213 16% 11%;
     --shell-ok: 145 55% 55%;
     --shell-alert: 4 90% 72%;
+
+    --topbar: 216 19% 5%;
+    --topbar-border: 213 13% 19%;
 
     --success: 145 55% 52%;
     --success-foreground: 216 19% 5%;

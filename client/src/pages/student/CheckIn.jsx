@@ -186,7 +186,7 @@ export default function CheckIn() {
 
         <div className="space-y-4 px-6 py-5">
           {scanning ? (
-            <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-md bg-shell">
+            <div className="relative mx-auto aspect-square w-full overflow-hidden rounded-md bg-scrim">
               <video ref={videoRef} className="h-full w-full object-cover" muted playsInline aria-label="Camera preview" />
               <ScanLine className="pointer-events-none absolute inset-0 m-auto h-2/3 w-2/3 text-signal" aria-hidden="true" />
             </div>
