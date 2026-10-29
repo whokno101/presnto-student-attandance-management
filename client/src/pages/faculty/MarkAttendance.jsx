@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AlertCircle, CheckCheck, Loader2, QrCode, Save, Users } from 'lucide-react'
+import { AlertCircle, CalendarX, CheckCheck, Loader2, QrCode, Save, Users } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 
 import DatePicker from '@/components/common/DatePicker'
@@ -16,13 +16,26 @@ import usePolicy from '@/hooks/usePolicy'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/api'
 import { formatDay, STATUS_META, STATUS_ORDER, toYmd } from '@/lib/attendance'
-import { formatSchedule } from '@/lib/constants'
+import { DAYS, DAY_ABBR, formatSchedule } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { getClassAttendance, markAttendance } from '@/services/attendance'
+import { getClassAttendance, getClassDays, markAttendance } from '@/services/attendance'
 import { startQrSession } from '@/services/qr'
 import { listClasses, listMyClasses } from '@/services/classes'
 
 const DEFAULT_STATUS = 'present'
+
+/** Monday-first weekday name of a local Date (`DAYS` order). */
+const weekdayName = (date) => DAYS[(date.getDay() + 6) % 7]
+
+/** The most recent day on or before today the class meets, or null (looks back a year). */
+const lastClassDay = (meetsOn) => {
+  const day = new Date()
+  for (let i = 0; i <= 366; i += 1) {
+    if (meetsOn(day)) return day
+    day.setDate(day.getDate() - 1)
+  }
+  return null
+}
 
 export default function MarkAttendance() {
   const { user } = useAuth()
@@ -36,6 +49,9 @@ export default function MarkAttendance() {
   const [searchParams] = useSearchParams()
   const [classId, setClassId] = useState('')
   const [date, setDate] = useState(() => new Date())
+  // Which days the selected class meets; the sheet waits for it so the picker
+  // never lands on a day without a class.
+  const [classDays, setClassDays] = useState(null)
 
   const [sheet, setSheet] = useState(null)
   const [marks, setMarks] = useState({})
@@ -45,8 +61,17 @@ export default function MarkAttendance() {
   // Switching class/date quickly must not let a slower, older response win.
   const sheetRequest = useRef(0)
 
-  const day = useMemo(() => toYmd(date), [date])
+  const day = useMemo(() => (date ? toYmd(date) : ''), [date])
   const selectedClass = classes.find((item) => item.id === classId) || null
+  const daysReady = Boolean(classId) && classDays?.classId === classId
+
+  const meetsOn = useCallback(
+    (value) =>
+      !classDays?.weekdays ||
+      classDays.weekdays.includes(weekdayName(value)) ||
+      classDays.dates.has(toYmd(value)),
+    [classDays]
+  )
 
   // Admins see every class; faculty only the ones assigned to them.
   useEffect(() => {
@@ -86,12 +111,37 @@ export default function MarkAttendance() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.role])
 
+  useEffect(() => {
+    if (!classId) return undefined
+    let active = true
+
+    getClassDays(classId)
+      .then((data) => {
+        if (active) setClassDays({ classId, weekdays: data.weekdays, dates: new Set(data.dates) })
+      })
+      .catch(() => {
+        // The server still refuses a day without a class; just leave every day pickable.
+        if (active) setClassDays({ classId, weekdays: null, dates: new Set() })
+      })
+
+    return () => {
+      active = false
+    }
+  }, [classId])
+
+  // Switching class keeps the chosen day when the new class meets then;
+  // otherwise jump to its most recent class day.
+  useEffect(() => {
+    if (!daysReady) return
+    setDate((current) => (current && meetsOn(current) ? current : lastClassDay(meetsOn)))
+  }, [daysReady, meetsOn])
+
   const loadSheet = useCallback(
     async (targetClassId, targetDay) => {
       const request = sheetRequest.current + 1
       sheetRequest.current = request
 
-      if (!targetClassId) {
+      if (!targetClassId || !targetDay) {
         setSheet(null)
         return
       }
@@ -117,8 +167,9 @@ export default function MarkAttendance() {
   )
 
   useEffect(() => {
+    if (!daysReady || (date && !meetsOn(date))) return
     loadSheet(classId, day)
-  }, [classId, day, loadSheet])
+  }, [classId, day, date, daysReady, meetsOn, loadSheet])
 
   const setStatus = (studentId, status) => {
     setMarks((prev) => ({ ...prev, [studentId]: status }))
@@ -203,7 +254,21 @@ export default function MarkAttendance() {
       )
     }
 
-    if (loadingSheet) {
+    if (daysReady && !date) {
+      return (
+        <Card>
+          <CardContent className="p-0">
+            <EmptyState
+              icon={CalendarX}
+              title="No class days yet"
+              description={`${selectedClass?.code ?? 'This class'} has not met yet, so there is no day to mark.`}
+            />
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (loadingSheet || !daysReady) {
       return (
         <Card>
           <CardContent className="space-y-3 p-6">
@@ -397,9 +462,15 @@ export default function MarkAttendance() {
               value={date}
               onChange={setDate}
               maxDate={new Date()}
-              disabled={classes.length === 0}
+              isAllowed={meetsOn}
+              disabled={classes.length === 0 || !daysReady}
             />
-            <p className="text-xs text-muted-foreground">Re-saving a day updates the existing marks.</p>
+            <p className="text-xs text-muted-foreground">
+              {classDays?.weekdays?.length
+                ? `Only class days (${classDays.weekdays.map((d) => DAY_ABBR[d] || d).join(', ')}${classDays.dates.size ? ' + scheduled sessions' : ''}) can be picked. `
+                : ''}
+              Re-saving a day updates the existing marks.
+            </p>
           </div>
         </CardContent>
       </Card>
