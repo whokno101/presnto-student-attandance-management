@@ -3,7 +3,8 @@ import { LogOut, Menu } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { NAV_ITEMS, ROLE_LABEL } from '@/lib/navigation'
+import NotificationBell from '@/components/layout/NotificationBell'
+import { navItemsFor, ROLE_LABEL } from '@/lib/navigation'
 import { useAuth } from '@/context/AuthContext'
 
 const initialsOf = (name = '') =>
@@ -14,12 +15,16 @@ const initialsOf = (name = '') =>
     .map((part) => part[0].toUpperCase())
     .join('') || '?'
 
-const titleFor = (pathname) => {
-  const match = [...NAV_ITEMS].sort((a, b) => b.to.length - a.to.length).find((item) => pathname.startsWith(item.to))
+// Pages reached from a link rather than the menu.
+const EXTRA_TITLES = [{ to: '/attendance/qr', label: 'QR check-in' }]
+
+// Role-aware: the same path can carry a different label per role (/reports).
+const titleFor = (pathname, role) => {
+  const match = [...navItemsFor(role), ...EXTRA_TITLES].sort((a, b) => b.to.length - a.to.length).find((item) => pathname.startsWith(item.to))
   return match?.label || 'Dashboard'
 }
 
-export default function Topbar({ onOpenSidebar }) {
+export default function Topbar({ onOpenSidebar, menuButtonRef }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -35,6 +40,7 @@ export default function Topbar({ onOpenSidebar }) {
         variant="ghost"
         size="icon"
         className="lg:hidden"
+        ref={menuButtonRef}
         onClick={onOpenSidebar}
         aria-label="Open navigation menu"
       >
@@ -42,11 +48,12 @@ export default function Topbar({ onOpenSidebar }) {
       </Button>
 
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-base font-semibold">{titleFor(pathname)}</h1>
+        <h1 className="truncate text-base font-semibold">{titleFor(pathname, user?.role)}</h1>
         <p className="truncate text-xs text-muted-foreground">University Attendance Management System</p>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
+        <NotificationBell />
         <div className="hidden text-right sm:block">
           <p className="max-w-[180px] truncate text-sm font-medium leading-tight">{user?.name}</p>
           <p className="max-w-[180px] truncate text-xs text-muted-foreground">{user?.email}</p>

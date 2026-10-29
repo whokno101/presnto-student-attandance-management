@@ -4,7 +4,26 @@ Role-based attendance tracking for a university, built as a single repository wi
 
 **Stack:** React 18 (Vite) + Tailwind CSS + shadcn/ui · Node.js + Express · MongoDB + Mongoose · JWT auth
 
-**Roles:** `admin` (full control) · `faculty` (assigned classes, mark attendance) · `student` (enroll, view own attendance)
+**Roles:** `admin` (full control) · `faculty` (assigned classes, attendance, insights, excuse review) · `student` (enroll, check in, view own attendance, submit excuses)
+
+### Sprint 02 (PB-12 – PB-23)
+
+| Item | What it adds |
+| --- | --- |
+| PB-12 Analytics | Admin dashboard: rate, absences, sessions, classes below threshold, trends (auto-refresh) |
+| PB-13 Activity log | Append-only audit trail of attendance and record changes, plus submission timeliness (on time / late / missing) |
+| PB-14 Deletion protection | Classes are archived, never deleted; history kept; restore within 90 days; type-to-confirm |
+| PB-15 Class reports | Session / student / record views, filters, 60% session warning, derived absence counts, Excused status |
+| PB-16 Insights & alerts | Faculty analytics, students at risk (4+ unexcused or < 75%), in-app notifications on threshold crossings |
+| PB-17 CSV exchange | Export, templates, validated import with preview and confirmation (role-limited) |
+| PB-18 Design system | Semantic tokens checked for WCAG AA, accessible dialogs/forms/navigation ([design-system.md](docs/design-system.md)) |
+| PB-19 Excuses | Students submit explanation + evidence; teachers approve or reject; approval recalculates counts |
+| PB-20 QR check-in | Rotating 15-second codes, in-app or phone-camera scanning, idempotent, manual fallback |
+| PB-21 Branding | Logo, favicon, accessible fallbacks |
+| PB-22/23 Scheduling | Multi-date and weekly scheduling with room/instructor conflict checks (lock-protected) |
+
+Product decisions and thresholds: [docs/sprint-02-decisions.md](docs/sprint-02-decisions.md) ·
+test evidence: [docs/sprint-02-test-report.md](docs/sprint-02-test-report.md).
 
 ---
 
@@ -13,7 +32,7 @@ Role-based attendance tracking for a university, built as a single repository wi
 ```
 university-attendance-system/
 ├── client/                         # Vite + React SPA
-│   ├── vite.config.js              # '@' -> src alias, /api proxy to :5000
+│   ├── vite.config.js              # '@' -> src alias, /api proxy to :5001
 │   └── src/
 │       ├── App.jsx                 # routes + role guards
 │       ├── components/
@@ -75,12 +94,17 @@ cp .env.example .env
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `PORT` | Express listening port | `5000` |
-| `MONGO_URI` | MongoDB connection string | `mongodb://127.0.0.1:27017/university-attendance` |
+| `PORT` | Express listening port (not 5000: macOS AirPlay owns it) | `5001` |
+| `MONGO_URI` | MongoDB connection string, or `memory` for a local dev database | `mongodb://127.0.0.1:27017/university-attendance` |
 | `JWT_SECRET` | Secret used to sign JWTs | *(must be overridden in production)* |
 | `JWT_EXPIRES_IN` | Token lifetime | `7d` |
 | `CLIENT_URL` | Origin allowed by CORS | `http://localhost:5173` |
-| `VITE_API_URL` | Base API URL used by the client | `/api` (Vite proxies to `:5000`) |
+| `INSTITUTION_TIME_ZONE` | IANA zone that defines "today" for attendance (e.g. `Africa/Casablanca`) | the server machine's zone |
+| `RETENTION_DAYS` | How long an archived class can be restored | `90` |
+| `SUBMISSION_DEADLINE_HOURS` | Hours after a session ends before attendance counts as late | `0` |
+| `FACULTY_IMPORT_ENABLED` | Allow faculty to import attendance CSVs for their own classes | `true` |
+| `EXCUSE_DOCUMENT_REQUIRED` | Require a supporting document on every excuse | `false` |
+| `VITE_API_URL` | Base API URL used by the client | `/api` (Vite proxies to `:5001`) |
 
 > Set a long random value for `JWT_SECRET` before deploying.
 > The server reads the **root** `.env` first, then `server/.env`; every value has a
@@ -93,25 +117,29 @@ cp .env.example .env
 npm run seed
 ```
 
-Creates: **1 admin, 2 faculty, 5 students, 2 classes** and ~15 weeks of attendance records per class.
+Creates: **1 admin, 10 faculty, 100 students, 10 classes** (each student in 3 classes) and 12 weeks of attendance per class.
 All seeded accounts share the password `Password@123`.
 
 | Role | Email |
 | --- | --- |
 | Admin | `admin@university.edu` |
-| Faculty | `faculty1@university.edu`, `faculty2@university.edu` |
-| Student | `student1@university.edu` … `student5@university.edu` |
+| Faculty | `faculty1@university.edu` … `faculty10@university.edu` |
+| Student | `student1@university.edu` … `student100@university.edu` |
 
 Use `--no-reset` (`node seed.js --no-reset`) to add data without clearing existing collections.
 
 ### 5. Run
 
 ```bash
-npm run dev:server   # http://localhost:5000  (health check: /health)
+npm run dev:server   # http://localhost:5001  (health check: /health)
 npm run dev:client   # http://localhost:5173
 ```
 
-No MongoDB installed? Run a portable binary against a project-local folder — no
+No MongoDB installed? Set `MONGO_URI=memory` in `.env`: the server (and the seed
+script) start a local mongod via `mongodb-memory-server`, storing data in
+`server/.data/memory-db` so it survives restarts. Run `npm run seed` once first.
+
+Alternatively, run a portable binary against a project-local folder — no
 installer or admin rights required:
 
 ```bash
@@ -120,6 +148,25 @@ mongod --dbpath .data/mongo --port 27017 --bind_ip 127.0.0.1
 ```
 
 `.data/` is git-ignored, so the database survives restarts without polluting the repo.
+
+### 6. Test
+
+```bash
+npm test --workspace=server   # API tests against an in-memory MongoDB (no setup needed)
+```
+
+Browser acceptance tests (axe-core WCAG 2.1 AA scans, keyboard and workflow checks for
+every role) run against the dev servers and **reseed the database**:
+
+```bash
+npm run dev:server & npm run dev:client &
+cd e2e && npm install && npm test        # uses installed Google Chrome
+npm test -- 03 05                        # run selected suites
+```
+
+Set `E2E_BASE_URL` to test another deployment and `E2E_BROWSER_CHANNEL=` (empty) to use
+Playwright's own Chromium (`npx playwright install chromium`). Screenshots are written to
+`e2e/.artifacts/`.
 
 ---
 
@@ -241,6 +288,17 @@ it **≥ 90% green**, **75–89% amber**, **< 75% red**.
 | `/enroll` | student | Class catalog with Enroll / Unenroll |
 | `/attendance/mark` | admin, faculty | Pick a class + date, toggle each student present / late / absent, save (idempotent per day) |
 | `/my-attendance` | student | Per-class history with a colour-coded attendance percentage |
+| `/check-in` | student | Scan the teacher's QR code (or open a scanned `?token=` link) |
+| `/excuses` | student | Submit absence excuses with evidence; see decisions |
+| `/admin/analytics` | admin | PB-12 analytics dashboard |
+| `/admin/schedule` | admin | Multi-date scheduling with conflict checks |
+| `/admin/activity` | admin | Activity log and submission timeliness |
+| `/reports` | admin, faculty | Session / student / record reports with CSV export |
+| `/insights` | admin, faculty | Class analytics and students at risk |
+| `/excuses/review` | admin, faculty | Review excuses for your classes |
+| `/data` | admin, faculty | CSV import / export (faculty: attendance only) |
+| `/attendance/qr/:id` | admin, faculty | Rotating QR code and live check-ins |
+| `/notifications` | any signed-in user | Alerts with read / unread history |
 | `/403` | any | Unauthorized page |
 | `*` | any | Not found |
 
@@ -256,7 +314,9 @@ User 1—1 Student ─┴─< Class >──────┘                │
 
 - `Attendance` has a **unique compound index** on `{ class, student, date }`, so re-marking a day updates rather than duplicates.
 - `Attendance.date` is normalized to **UTC midnight** before saving, keeping that index reliable.
-- A `Class` pre-save hook mirrors itself into the owner's `Faculty.classesAssigned`; deleting a class cleans up faculty, student enrollment and its attendance records.
+- A `Class` pre-save hook mirrors itself into the owner's `Faculty.classesAssigned`. Classes are **archived** (`archivedAt`), never deleted: roster and attendance history are kept.
+- `AuditLog` is append-only (every Mongoose update/delete path throws). `ClassSession` holds scheduled occurrences; `RiskState`, `Notification`, `Excuse` and `QrCheckin` back PB-16, PB-19 and PB-20.
+- Every attendance write (manual, CSV import, approved excuse, QR) goes through one service path that audits each change and re-evaluates risk.
 - `Class.faculty` is **optional** so a class can exist before it is staffed (the admin table renders an `Unassigned` badge), and `Class.capacity` (default 40) backs the `Enrolled` column.
 
 ---
@@ -270,6 +330,7 @@ User 1—1 Student ─┴─< Class >──────┘                │
 | 3 | Admin CRUD (students, faculty, classes) + admin pages | ✅ Complete |
 | 4 | Assign faculty, enrollment, My Classes / Enroll pages | ✅ Complete |
 | 5 | Attendance marking + reports, student attendance, polish | ✅ Complete |
+| Sprint 02 | PB-12 – PB-23 (see the table at the top) | ✅ Complete — pending Product Owner review |
 
 See [`docs/design.md`](docs/design.md) for the UI specification.
 

@@ -195,7 +195,7 @@ export default function ManageFaculty() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-muted-foreground hover:text-emerald-600"
+                          className="text-muted-foreground hover:text-success"
                           onClick={() => handleActivate(faculty)}
                           aria-label={`Activate ${faculty.name}`}
                           title="Activate"

@@ -188,7 +188,7 @@ export default function ManageStudents() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-muted-foreground hover:text-emerald-600"
+                          className="text-muted-foreground hover:text-success"
                           onClick={() => handleActivate(student)}
                           aria-label={`Activate ${student.name}`}
                           title="Activate"

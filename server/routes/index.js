@@ -7,6 +7,17 @@ const studentRoutes = require('./students');
 const facultyRoutes = require('./faculty');
 const classRoutes = require('./classes');
 const attendanceRoutes = require('./attendance');
+const auditRoutes = require('./audit');
+const reportRoutes = require('./reports');
+const analyticsRoutes = require('./analytics');
+const notificationRoutes = require('./notifications');
+const dataRoutes = require('./data');
+const excuseRoutes = require('./excuses');
+const scheduleRoutes = require('./schedule');
+const qrRoutes = require('./qr');
+
+// Registers the attendance-change hook that re-evaluates risk (PB-16).
+require('../services/risk.service');
 
 const router = express.Router();
 
@@ -20,6 +31,38 @@ router.use('/students', studentRoutes);
 router.use('/faculty', facultyRoutes);
 router.use('/classes', classRoutes);
 router.use('/attendance', attendanceRoutes);
+router.use('/audit', auditRoutes);
+router.use('/reports', reportRoutes);
+router.use('/analytics', analyticsRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/data', dataRoutes);
+router.use('/excuses', excuseRoutes);
+router.use('/schedule', scheduleRoutes);
+router.use('/qr', qrRoutes);
+
+/**
+ * Institution policy the UI needs to label and format things consistently with
+ * the server: time zone for timestamps, and every threshold (handbook §2).
+ */
+router.get('/policy', requireAuth, (req, res) => {
+  const policy = require('../config/policy');
+  res.json({
+    data: {
+      timeZone: policy.TIME_ZONE,
+      sessionWarningRate: policy.SESSION_WARNING_RATE,
+      studentRiskRate: policy.STUDENT_RISK_RATE,
+      riskMinUnexcusedAbsences: policy.RISK_MIN_UNEXCUSED_ABSENCES,
+      excludeExcusedFromDenominator: policy.EXCLUDE_EXCUSED_FROM_DENOMINATOR,
+      excuseDocumentRequired: policy.EXCUSE_DOCUMENT_REQUIRED,
+      excuseMaxBytes: policy.EXCUSE_MAX_BYTES,
+      importMaxBytes: policy.IMPORT_MAX_BYTES,
+      retentionDays: policy.RETENTION_DAYS,
+      overdueAfterHours: policy.OVERDUE_AFTER_HOURS,
+      qrRotationSeconds: policy.QR_ROTATION_SECONDS,
+      facultyImportEnabled: policy.FACULTY_IMPORT_ENABLED,
+    },
+  });
+});
 
 /** Machine-readable permission matrix, handy for audits and client hints. */
 router.get('/permissions', requireAuth, (req, res) => {
@@ -43,7 +86,25 @@ router.get('/permissions', requireAuth, (req, res) => {
       { method: 'POST', path: '/api/classes', roles: ['admin'] },
       { method: 'PUT', path: '/api/classes/:id', roles: ['admin'] },
       { method: 'PUT', path: '/api/classes/:id/assign-faculty', roles: ['admin'] },
-      { method: 'DELETE', path: '/api/classes/:id', roles: ['admin'] },
+      { method: 'DELETE', path: '/api/classes/:id', roles: ['admin'], notes: 'archives; history retained' },
+      { method: 'POST', path: '/api/classes/:id/restore', roles: ['admin'] },
+      { method: 'GET', path: '/api/audit', roles: ['admin'] },
+      { method: 'GET', path: '/api/analytics/admin', roles: ['admin'] },
+      { method: 'GET', path: '/api/analytics/faculty', roles: ['admin', 'faculty'], notes: 'faculty: own classes only' },
+      { method: 'GET', path: '/api/data/export/:dataset', roles: ['admin', 'faculty'], notes: 'faculty: attendance for own classes only' },
+      { method: 'POST', path: '/api/data/import/:dataset/preview|commit', roles: ['admin', 'faculty'], notes: 'faculty: attendance only, own classes, if enabled' },
+      { method: 'POST', path: '/api/qr/sessions', roles: ['admin', 'faculty'], notes: 'faculty: own classes; today only' },
+      { method: 'POST', path: '/api/qr/checkin', roles: ['student'], notes: 'student from the session; enrolled classes only' },
+      { method: 'GET', path: '/api/schedule', roles: ['admin'] },
+      { method: 'POST', path: '/api/schedule/preview', roles: ['admin'] },
+      { method: 'POST', path: '/api/schedule', roles: ['admin'], notes: 'all-or-nothing; conflicts rejected with reasons' },
+      { method: 'DELETE', path: '/api/schedule/:id', roles: ['admin'], notes: 'cancels; kept as history' },
+      { method: 'POST', path: '/api/excuses', roles: ['student'], notes: 'own absences only' },
+      { method: 'POST', path: '/api/excuses/:id/review', roles: ['admin', 'faculty'], notes: 'faculty: current teacher of the class' },
+      { method: 'GET', path: '/api/notifications', roles: ['admin', 'faculty', 'student'], notes: 'own notifications only' },
+      { method: 'GET', path: '/api/reports/sessions|students|records', roles: ['admin', 'faculty'], notes: 'faculty: own classes only; ?format=csv exports' },
+      { method: 'GET', path: '/api/audit/submissions', roles: ['admin'] },
+      { method: 'GET', path: '/api/audit/:id', roles: ['admin'] },
       { method: 'GET', path: '/api/admin/stats', roles: ['admin'] },
       {
         method: 'POST',

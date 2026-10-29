@@ -7,43 +7,43 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
  * ------------------------------------------------------------------ */
 
 const name = z
-  .string({ required_error: 'Full name is required' })
+  .string({ error: 'Full name is required' })
   .trim()
   .min(2, 'Full name must be at least 2 characters')
   .max(80, 'Full name cannot exceed 80 characters');
 
 const email = z
-  .string({ required_error: 'Email is required' })
+  .string({ error: 'Email is required' })
   .trim()
   .min(1, 'Email is required')
   .email('Enter a valid email address')
   .max(120, 'Email cannot exceed 120 characters');
 
 const password = z
-  .string({ required_error: 'Password is required' })
+  .string({ error: 'Password is required' })
   .min(8, 'Password must be at least 8 characters')
   .max(72, 'Password cannot exceed 72 characters');
 
 const department = z
-  .string({ required_error: 'Department is required' })
+  .string({ error: 'Department is required' })
   .trim()
   .min(2, 'Department is required')
   .max(80, 'Department cannot exceed 80 characters');
 
 const studentId = z
-  .string({ required_error: 'Student ID is required' })
+  .string({ error: 'Student ID is required' })
   .trim()
   .regex(/^[A-Za-z0-9-]{3,20}$/, 'Student ID must be 3-20 letters, numbers or dashes');
 
 const employeeId = z
-  .string({ required_error: 'Employee ID is required' })
+  .string({ error: 'Employee ID is required' })
   .trim()
   .regex(/^[A-Za-z0-9-]{3,20}$/, 'Employee ID must be 3-20 letters, numbers or dashes');
 
-const isActive = z.boolean({ invalid_type_error: 'Status must be true or false' });
+const isActive = z.boolean({ error: 'Status must be true or false' });
 
 const timeString = z
-  .string({ required_error: 'Time is required' })
+  .string({ error: 'Time is required' })
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Use 24-hour HH:mm format');
 
 const nonEmptyUpdate = (shape) =>
@@ -99,21 +99,23 @@ const facultyUpdateSchema = nonEmptyUpdate({
 
 const classBaseSchema = z.object({
   name: z
-    .string({ required_error: 'Class name is required' })
+    .string({ error: 'Class name is required' })
     .trim()
     .min(3, 'Class name must be at least 3 characters')
     .max(120, 'Class name cannot exceed 120 characters'),
   code: z
-    .string({ required_error: 'Class code is required' })
+    .string({ error: 'Class code is required' })
     .trim()
     .regex(/^[A-Za-z0-9-]{3,15}$/, 'Class code must be 3-15 letters, numbers or dashes'),
   department,
   semester: z
-    .string({ required_error: 'Semester is required' })
+    .string({ error: 'Semester is required' })
     .trim()
     .min(1, 'Semester is required')
     .max(20, 'Semester cannot exceed 20 characters'),
-  day: z.enum(DAYS, { required_error: 'Day is required', invalid_type_error: 'Select a valid day' }),
+  day: z.enum(DAYS, {
+    error: (issue) => (issue.input === undefined ? 'Day is required' : 'Select a valid day'),
+  }),
   startTime: timeString,
   endTime: timeString,
   facultyId: z
@@ -121,6 +123,7 @@ const classBaseSchema = z.object({
     .regex(/^[0-9a-fA-F]{24}$/, 'Invalid faculty identifier')
     .optional()
     .nullable(),
+  room: z.string().trim().max(30, 'Room cannot exceed 30 characters').optional(),
 });
 
 const withTimeOrder = (schema) =>
@@ -141,6 +144,7 @@ const classUpdateSchema = withTimeOrder(
     startTime: timeString.optional(),
     endTime: timeString.optional(),
     facultyId: classBaseSchema.shape.facultyId,
+    room: classBaseSchema.shape.room,
   })
 );
 
@@ -149,7 +153,7 @@ const classUpdateSchema = withTimeOrder(
  * ------------------------------------------------------------------ */
 
 const objectId = z
-  .string()
+  .string({ error: 'Select a valid record' })
   .regex(/^[0-9a-fA-F]{24}$/, 'Select a valid record');
 
 /** `studentId` is optional for students (their own record is used) and
@@ -166,10 +170,18 @@ const assignFacultySchema = z.object({
  * Attendance
  * ------------------------------------------------------------------ */
 
-/** `YYYY-MM-DD` only — the model normalises it to UTC midnight. */
+/**
+ * `YYYY-MM-DD` only — the model normalises it to UTC midnight. The refine
+ * rejects dates that do not exist (2026-02-31), which `new Date()` would
+ * otherwise silently roll over into the next month.
+ */
 const dateOnly = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the YYYY-MM-DD format');
+  .string({ error: 'Date is required' })
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the YYYY-MM-DD format')
+  .refine((value) => {
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  }, 'Enter a date that exists on the calendar');
 
 const attendanceMarkSchema = z.object({
   classId: objectId,
@@ -178,8 +190,8 @@ const attendanceMarkSchema = z.object({
     .array(
       z.object({
         studentId: objectId,
-        status: z.enum(['present', 'absent', 'late'], {
-          message: 'Status must be present, absent or late',
+        status: z.enum(['present', 'late', 'absent', 'excused'], {
+          message: 'Status must be present, late, absent or excused',
         }),
       })
     )

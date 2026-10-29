@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { AlertCircle, CheckCheck, Loader2, Save, Users } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AlertCircle, CheckCheck, Loader2, QrCode, Save, Users } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import DatePicker from '@/components/common/DatePicker'
 import EmptyState from '@/components/common/EmptyState'
@@ -11,12 +12,14 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuth } from '@/context/AuthContext'
+import usePolicy from '@/hooks/usePolicy'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/api'
 import { formatDay, STATUS_META, STATUS_ORDER, toYmd } from '@/lib/attendance'
 import { formatSchedule } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getClassAttendance, markAttendance } from '@/services/attendance'
+import { startQrSession } from '@/services/qr'
 import { listClasses, listMyClasses } from '@/services/classes'
 
 const DEFAULT_STATUS = 'present'
@@ -24,6 +27,9 @@ const DEFAULT_STATUS = 'present'
 export default function MarkAttendance() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const policy = usePolicy()
+  const navigate = useNavigate()
+  const [startingQr, setStartingQr] = useState(false)
 
   const [classes, setClasses] = useState([])
   const [loadingClasses, setLoadingClasses] = useState(true)
@@ -35,6 +41,8 @@ export default function MarkAttendance() {
   const [loadingSheet, setLoadingSheet] = useState(false)
   const [sheetError, setSheetError] = useState(null)
   const [saving, setSaving] = useState(false)
+  // Switching class/date quickly must not let a slower, older response win.
+  const sheetRequest = useRef(0)
 
   const day = useMemo(() => toYmd(date), [date])
   const selectedClass = classes.find((item) => item.id === classId) || null
@@ -77,6 +85,9 @@ export default function MarkAttendance() {
 
   const loadSheet = useCallback(
     async (targetClassId, targetDay) => {
+      const request = sheetRequest.current + 1
+      sheetRequest.current = request
+
       if (!targetClassId) {
         setSheet(null)
         return
@@ -86,15 +97,17 @@ export default function MarkAttendance() {
       setSheetError(null)
       try {
         const data = await getClassAttendance(targetClassId, targetDay)
+        if (sheetRequest.current !== request) return
         setSheet(data)
         setMarks(
           Object.fromEntries(data.students.map((student) => [student.id, student.status || DEFAULT_STATUS]))
         )
       } catch (error) {
+        if (sheetRequest.current !== request) return
         setSheet(null)
         setSheetError(error)
       } finally {
-        setLoadingSheet(false)
+        if (sheetRequest.current === request) setLoadingSheet(false)
       }
     },
     []
@@ -113,6 +126,20 @@ export default function MarkAttendance() {
     setMarks(Object.fromEntries(sheet.students.map((student) => [student.id, DEFAULT_STATUS])))
   }
 
+  const isToday = day === toYmd(new Date())
+
+  // PB-20: open a rotating QR code for today's session; manual marking stays available.
+  const startQr = async () => {
+    setStartingQr(true)
+    try {
+      const session = await startQrSession(classId)
+      navigate(`/attendance/qr/${session.id}`)
+    } catch (error) {
+      toast({ title: 'Could not start QR check-in', description: getErrorMessage(error), variant: 'destructive' })
+      setStartingQr(false)
+    }
+  }
+
   const handleSave = async () => {
     if (!sheet || sheet.students.length === 0) return
 
@@ -128,7 +155,7 @@ export default function MarkAttendance() {
 
       toast({
         title: 'Attendance saved',
-        description: `${summary.present} present · ${summary.late} late · ${summary.absent} absent`,
+        description: `${summary.present} present · ${summary.late} late · ${summary.absent} absent${summary.excused ? ` · ${summary.excused} excused` : ''}. Absence counts updated.`,
         variant: 'success',
       })
 
@@ -234,6 +261,12 @@ export default function MarkAttendance() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {isToday ? (
+              <Button variant="outline" size="sm" onClick={startQr} disabled={startingQr}>
+                {startingQr ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
+                QR check-in
+              </Button>
+            ) : null}
             <Button variant="outline" size="sm" onClick={markAllPresent}>
               <CheckCheck className="h-4 w-4" />
               Mark all present
@@ -251,6 +284,7 @@ export default function MarkAttendance() {
               <TableRow className="hover:bg-transparent">
                 <TableHead>Student</TableHead>
                 <TableHead>Student ID</TableHead>
+                <TableHead className="hidden md:table-cell">Class totals</TableHead>
                 <TableHead className="text-right">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -264,6 +298,21 @@ export default function MarkAttendance() {
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {student.studentId}
+                  </TableCell>
+                  <TableCell className="hidden whitespace-nowrap text-xs md:table-cell">
+                    <span className={cn('font-semibold', student.absences >= policy.riskMinUnexcusedAbsences && 'text-destructive')}>
+                      {student.absences}
+                    </span>{' '}
+                    <span className="text-muted-foreground">
+                      {student.absences === 1 ? 'absence' : 'absences'}
+                      {student.excused ? ` · ${student.excused} excused` : ''}
+                      {student.rate != null ? ` · ${student.rate}%` : ''}
+                    </span>
+                    {student.source === 'qr' ? (
+                      <Badge variant="secondary" className="ml-2">
+                        QR
+                      </Badge>
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end">
@@ -282,7 +331,7 @@ export default function MarkAttendance() {
                               aria-label={`${STATUS_META[status].label} for ${student.name}`}
                               onClick={() => setStatus(student.id, status)}
                               className={cn(
-                                'rounded px-2.5 py-1 text-xs font-medium transition-colors',
+                                'rounded px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
                                 active
                                   ? STATUS_META[status].active
                                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
@@ -308,7 +357,7 @@ export default function MarkAttendance() {
     <div className="space-y-5">
       <PageHeader
         title="Mark Attendance"
-        description="Pick a class and a date, then mark every student present, late or absent."
+        description="Pick a class and a date, then mark every student present, late, absent or excused."
       />
 
       <Card>

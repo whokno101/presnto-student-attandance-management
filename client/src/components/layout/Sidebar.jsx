@@ -1,5 +1,7 @@
 import { NavLink } from 'react-router-dom'
-import { GraduationCap, ShieldCheck } from 'lucide-react'
+import { ShieldCheck } from 'lucide-react'
+
+import Logo from '@/components/common/Logo'
 
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -17,14 +19,8 @@ export default function Sidebar({ onNavigate }) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center gap-2 border-b px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <GraduationCap className="h-5 w-5" aria-hidden="true" />
-        </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold leading-tight">UniTrack</p>
-          <p className="truncate text-xs text-muted-foreground">Attendance System</p>
-        </div>
+      <div className="flex h-16 items-center border-b px-5">
+        <Logo subtitle="Attendance System" />
       </div>
 
       <div className="flex items-center justify-between gap-2 px-5 py-4">
@@ -43,9 +39,9 @@ export default function Sidebar({ onNavigate }) {
             onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 isActive
-                  ? 'bg-primary/10 text-primary'
+                  ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )
             }
@@ -60,7 +56,7 @@ export default function Sidebar({ onNavigate }) {
         <a
           href={homeFor(user?.role)}
           onClick={onNavigate}
-          className="flex items-center gap-2 rounded-md px-2 py-2 text-xs text-muted-foreground hover:bg-accent"
+          className="flex items-center gap-2 rounded-md px-2 py-2 text-xs text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
           Session secured by JWT

@@ -7,14 +7,30 @@ const { notFound, errorHandler } = require('./middleware/error');
 
 const app = express();
 
+// Flat query strings only: `?department[$ne]=x` must reach a filter as text,
+// never as a MongoDB operator object.
+app.set('query parser', 'simple');
+app.disable('x-powered-by');
+
+// Baseline security headers for every response (the API serves no HTML).
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
+  next();
+});
+
 app.use(
   cors({
     origin: [clientUrl, 'http://localhost:5173'],
     credentials: true,
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// 8 MB: a 5 MB excuse document base64-encodes to ~6.7 MB (PB-19); CSV imports
+// are capped separately at 2 MB by the import service (PB-17).
+app.use(express.json({ limit: '8mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Unauthenticated liveness probe (not part of the /api surface).
 app.get('/health', (req, res) => {

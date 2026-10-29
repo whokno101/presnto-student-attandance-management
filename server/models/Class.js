@@ -6,8 +6,6 @@ require('./Student');
 require('./Attendance');
 
 const Faculty = () => mongoose.model('Faculty');
-const Student = () => mongoose.model('Student');
-const Attendance = () => mongoose.model('Attendance');
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -80,6 +78,25 @@ const classSchema = new mongoose.Schema(
         ref: 'Student',
       },
     ],
+    // Default room used when scheduling sessions (PB-22); optional.
+    room: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      maxlength: [30, 'Room cannot exceed 30 characters'],
+      default: '',
+    },
+    // Soft deletion (PB-14): archived classes leave every active list but keep
+    // their roster and attendance history. There is no hard-delete path.
+    archivedAt: {
+      type: Date,
+      default: null,
+    },
+    archivedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
     capacity: {
       type: Number,
       default: 40,
@@ -93,6 +110,7 @@ const classSchema = new mongoose.Schema(
 classSchema.index({ department: 1, semester: 1 });
 classSchema.index({ faculty: 1 });
 classSchema.index({ students: 1 });
+classSchema.index({ archivedAt: 1 });
 
 /**
  * Cross-reference hook: keeps Faculty.classesAssigned and Student.enrolledClasses
@@ -113,22 +131,6 @@ classSchema.pre('save', async function (next) {
     if (this.isNew || this.isModified('faculty')) {
       await syncReference(this, Faculty(), 'classesAssigned');
     }
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
-
-classSchema.pre('findOneAndDelete', async function (next) {
-  try {
-    const doc = await this.model.findOne(this.getQuery()).select('faculty students');
-    if (!doc) return next();
-    await syncReference(doc, Faculty(), 'classesAssigned', true);
-    await Student().updateMany(
-      { _id: { $in: doc.students || [] } },
-      { $pull: { enrolledClasses: doc._id } }
-    );
-    await Attendance().deleteMany({ class: doc._id });
     next();
   } catch (err) {
     next(err);

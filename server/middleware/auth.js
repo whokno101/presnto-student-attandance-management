@@ -58,6 +58,8 @@ const requireAuth = async (req, res, next) => {
   }
 };
 
+const isDestructive = (req) => req.method === 'DELETE' || /\/(archive|restore)(\/|$)/.test(req.path);
+
 /**
  * requireRole('admin') / requireRole('admin', 'faculty') / requireRole(['admin'])
  * Must be mounted after requireAuth. Wrong role -> 403 FORBIDDEN.
@@ -71,6 +73,16 @@ const requireRole = (...roles) => {
     }
 
     if (!allowed.includes(req.user.role)) {
+      // Rejected destructive attempts are part of the audit trail (PB-14).
+      if (isDestructive(req)) {
+        require('../services/audit.service').record({
+          actor: req.user,
+          action: 'destructive.denied',
+          outcome: 'denied',
+          summary: `Denied ${req.method} ${req.originalUrl.split('?')[0]} for a ${req.user.role} account`,
+          meta: { method: req.method, path: req.originalUrl.split('?')[0] },
+        });
+      }
       return next(
         ApiError.forbidden(`This action requires one of the following roles: ${allowed.join(', ')}`)
       );

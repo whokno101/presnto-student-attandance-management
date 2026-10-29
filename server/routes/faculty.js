@@ -29,7 +29,7 @@ router.post(
   requireRole('admin'),
   validate(facultyCreateSchema),
   asyncHandler(async (req, res) => {
-    const faculty = await facultyService.create(req.body);
+    const faculty = await facultyService.create(req.body, req.user);
     res.status(201).json({ data: faculty, message: 'Faculty created' });
   })
 );
@@ -39,7 +39,7 @@ router.put(
   requireRole('admin'),
   validate(facultyUpdateSchema),
   asyncHandler(async (req, res) => {
-    const faculty = await facultyService.update(req.params.id, req.body);
+    const faculty = await facultyService.update(req.params.id, req.body, req.user);
     res.json({ data: faculty, message: 'Faculty updated' });
   })
 );
@@ -48,7 +48,7 @@ router.delete(
   '/:id',
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const faculty = await facultyService.remove(req.params.id);
+    const faculty = await facultyService.remove(req.params.id, req.user);
     res.json({ data: faculty, message: 'Faculty deactivated' });
   })
 );

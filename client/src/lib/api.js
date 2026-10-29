@@ -3,7 +3,7 @@ import { clearSession, getToken } from '@/lib/storage'
 
 /**
  * Single axios instance for the whole app.
- * - baseURL defaults to the Vite dev proxy (`/api` -> http://localhost:5000)
+ * - baseURL defaults to the Vite dev proxy (`/api` -> http://localhost:5001)
  * - request interceptor attaches the bearer token
  * - response interceptor handles 401/403 globally:
  *     401 -> clear storage, bounce to /login (expired or revoked session)
@@ -48,7 +48,9 @@ api.interceptors.response.use(
       hardRedirect(`/login?reason=${reason}`)
     }
 
-    if (status === 403 && !onLoginPage) {
+    // Requests that explain a 403 inline (e.g. "not enrolled in this class")
+    // opt out with `skipForbiddenRedirect`.
+    if (status === 403 && !onLoginPage && !error.config?.skipForbiddenRedirect) {
       hardRedirect('/403')
     }
 

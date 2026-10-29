@@ -15,6 +15,8 @@
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
+const { disconnectDB } = require('./config/db');
+const { todayInInstitution, zonedTime, ymd } = require('./utils/dates');
 const { User, Faculty, Student, Class, Attendance } = require('./models');
 
 const SALT_ROUNDS = 12;
@@ -32,6 +34,9 @@ const WEEKS_HISTORY = 12;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const ADMIN = { name: 'Alice Admin', email: ADMIN_EMAIL, role: 'admin' };
+
+/** This class's session one week ago is left unsubmitted (Activity Log demo). */
+const MISSING_SUBMISSION_CLASS = 'CS-305';
 
 const FACULTY_NAMES = [
   { first: 'Elena', last: 'Marchetti' },
@@ -118,7 +123,7 @@ const shuffle = (items, rng) => {
 /** `today` as a weekday name, e.g. 'Monday' — resolved at seed time. */
 const todayWeekday = () => {
   const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return names[new Date().getDay()];
+  return names[todayInInstitution().getUTCDay()];
 };
 
 /**
@@ -151,7 +156,7 @@ const ensureTodayHasClasses = (slots, weekday, minimum = 2) => {
  */
 const classDates = (day) => {
   const target = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day);
-  const today = utcDay(new Date());
+  const today = todayInInstitution();
   const backToDay = (today.getUTCDay() - target + 7) % 7;
   const mostRecent = today.getTime() - backToDay * DAY_MS;
 
@@ -188,7 +193,10 @@ const seedDatabase = async () => {
   if (RESET) {
     console.log('Clearing existing data...');
     await Promise.all(
-      ['users', 'faculties', 'students', 'classes', 'attendances'].map((c) =>
+      [
+        'users', 'faculties', 'students', 'classes', 'attendances', 'auditlogs', 'classsessions',
+        'notifications', 'riskstates', 'excuses', 'qrcheckins', 'schedulelocks',
+      ].map((c) =>
         mongoose.connection.collection(c).deleteMany({})
       )
     );
@@ -273,6 +281,12 @@ const seedDatabase = async () => {
     createdClasses.push(classDoc);
   }
 
+  // The classes have been running for the whole seeded history.
+  await Class.collection.updateMany(
+    { _id: { $in: createdClasses.map((c) => c._id) } },
+    { $set: { createdAt: new Date(todayInInstitution().getTime() - WEEKS_HISTORY * 7 * DAY_MS) } }
+  );
+
   /* ---------------------------------------------------------------- *
    * 3. Enrollment — 3 distinct classes per student, 30 students per class
    * ---------------------------------------------------------------- */
@@ -310,7 +324,11 @@ const seedDatabase = async () => {
   // One list per student: 3 classes x 12 dates = 36 sessions.
   const sessionsByStudent = Array.from({ length: STUDENT_COUNT }, () => []);
   createdClasses.forEach((classDoc) => {
-    const dates = classDates(classDoc.schedule.day);
+    // One class leaves last week's session unsubmitted so the Activity Log
+    // shows a "missing" submission next to on-time and late ones.
+    const dates = classDates(classDoc.schedule.day).filter(
+      (date, index) => !(classDoc.code === MISSING_SUBMISSION_CLASS && index === 1)
+    );
     classDoc.students.forEach((studentId) => {
       sessionsByStudent[studentIndexById.get(String(studentId))].push({ classId: classDoc._id, date: dates });
     });
@@ -366,7 +384,94 @@ const seedDatabase = async () => {
     return true;
   });
 
-  await Attendance.insertMany(uniqueRecords, { ordered: false });
+  // Submission time per class session: usually during class (on time), ~12%
+  // the next day or later (late). Written raw so the timestamps are kept.
+  const classById = new Map(createdClasses.map((c) => [String(c._id), c]));
+  const submittedAtByKey = new Map();
+  uniqueRecords.forEach((record) => {
+    const key = `${record.class}|${record.date.toISOString()}`;
+    if (!submittedAtByKey.has(key)) {
+      const classDoc = classById.get(String(record.class));
+      const end = zonedTime(record.date, classDoc.schedule.endTime);
+      const offsetHours = rng() < 0.12 ? 2 + rng() * 40 : -(5 + rng() * 40) / 60;
+      const at = new Date(Math.min(end.getTime() + offsetHours * 3600 * 1000, Date.now()));
+      submittedAtByKey.set(key, at);
+    }
+    const at = submittedAtByKey.get(key);
+    record.createdAt = at;
+    record.updatedAt = at;
+    record.source = 'manual';
+  });
+
+  await Attendance.collection.insertMany(uniqueRecords, { ordered: false });
+
+  // Matching "attendance submitted" entries so the Activity Log has history.
+  const userById = new Map(userDocs.map((u) => [String(u._id), u]));
+  const auditEntries = [...submittedAtByKey.entries()].map(([key, at]) => {
+    const [classId, iso] = key.split('|');
+    const classDoc = classById.get(classId);
+    const date = new Date(iso);
+    const rows = uniqueRecords.filter((r) => String(r.class) === classId && r.date.getTime() === date.getTime());
+    const count = (status) => rows.filter((r) => r.status === status).length;
+    const actorUser = userById.get(String(markedByByClass.get(classId)));
+    const deadline = zonedTime(date, classDoc.schedule.endTime);
+    return {
+      actor: { id: actorUser._id, name: actorUser.name, role: 'faculty' },
+      action: 'attendance.submitted',
+      outcome: 'success',
+      entityType: 'Class',
+      entityId: classDoc._id,
+      class: classDoc._id,
+      classCode: classDoc.code,
+      department: classDoc.department,
+      summary: `Submitted attendance for ${classDoc.code} on ${ymd(date)}: ${count('present')} present, ${count('late')} late, ${count('absent')} absent (${rows.length} changed)`,
+      changes: [],
+      meta: { date: ymd(date), source: 'manual', changed: rows.length, timeliness: at <= deadline ? 'on_time' : 'late', deadline },
+      createdAt: at,
+    };
+  });
+  await mongoose.connection.collection('auditlogs').insertMany(auditEntries);
+
+  // Evaluate PB-16 risk for every class so faculty start with their alerts.
+  console.log('Evaluating at-risk students...');
+  const riskService = require('./services/risk.service');
+  let alerts = 0;
+  for (const classDoc of createdClasses) {
+    // eslint-disable-next-line no-await-in-loop
+    alerts += (await riskService.evaluate(classDoc._id)).newlyAtRisk;
+  }
+  console.log(`  ${alerts} at-risk alerts sent to faculty`);
+
+  // A few absence excuses (PB-19) for faculty1's class: two pending, one approved.
+  console.log('Submitting sample absence excuses...');
+  const excuseService = require('./services/excuse.service');
+  const demoClass = createdClasses[0];
+  const demoAbsences = await Attendance.find({ class: demoClass._id, status: 'absent' }).sort({ date: -1 }).limit(3).lean();
+  const ownerUser = userById.get(String(markedByByClass.get(String(demoClass._id))));
+  const reasons = [
+    ['illness', 'I had the flu and my doctor told me to stay home for two days.'],
+    ['transport', 'The train line was suspended because of flooding, so I could not reach campus.'],
+    ['family', 'I had to attend a family funeral out of town.'],
+  ];
+  for (const [index, absence] of demoAbsences.entries()) {
+    const profile = studentDocs.find((st) => String(st._id) === String(absence.student));
+    const studentUser = userById.get(String(profile.user));
+    const actor = { id: String(studentUser._id), name: studentUser.name, role: 'student' };
+    // eslint-disable-next-line no-await-in-loop
+    const excuse = await excuseService.submit(actor, {
+      classId: String(demoClass._id),
+      date: ymd(absence.date),
+      category: reasons[index][0],
+      explanation: reasons[index][1],
+    });
+    if (index === 2) {
+      // eslint-disable-next-line no-await-in-loop
+      await excuseService.review({ id: String(ownerUser._id), name: ownerUser.name, role: 'faculty' }, excuse.id, {
+        decision: 'approved',
+        note: 'Thank you for letting me know.',
+      });
+    }
+  }
 
   /* ---------------------------------------------------------------- *
    * 5. Summary — read back from MongoDB so the numbers reflect the database
@@ -433,12 +538,12 @@ const seedDatabase = async () => {
   console.log('  faculty1@university.edu  (faculty)');
   console.log('  student1@university.edu  (student)');
 
-  await mongoose.connection.close();
+  await disconnectDB();
   process.exit(0);
 };
 
 seedDatabase().catch(async (err) => {
   console.error('Seed failed:', err);
-  await mongoose.connection.close().catch(() => {});
+  await disconnectDB().catch(() => {});
   process.exit(1);
 });

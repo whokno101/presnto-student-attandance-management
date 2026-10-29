@@ -21,7 +21,7 @@ router.get(
     const [students, faculty, classes, todayAttendance] = await Promise.all([
       Student.countDocuments(),
       Faculty.countDocuments(),
-      Class.countDocuments(),
+      Class.countDocuments({ archivedAt: null }),
       attendanceService.todayRate(),
     ]);
 

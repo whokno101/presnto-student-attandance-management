@@ -5,6 +5,7 @@ import EmptyState from '@/components/common/EmptyState'
 import PageHeader from '@/components/common/PageHeader'
 import RateCell from '@/components/common/RateCell'
 import SearchInput from '@/components/common/SearchInput'
+import StatCard from '@/components/common/StatCard'
 import TablePagination from '@/components/common/TablePagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -38,25 +39,6 @@ const SORTABLE_COLUMNS = [
   { key: 'classes', label: 'Classes' },
   { key: 'rate', label: 'Rate' },
 ]
-
-const StatCard = ({ icon: Icon, label, value, hint, accent, iconClass, loading }) => (
-  <Card className={cn('border-t-4 transition-shadow duration-200 hover:shadow-md', accent)}>
-    <CardContent className="p-5">
-      <div className={cn('mb-4 flex h-10 w-10 items-center justify-center rounded-lg', iconClass)}>
-        <Icon className="h-5 w-5" aria-hidden="true" />
-      </div>
-
-      {loading ? (
-        <div className="h-9 w-20 animate-pulse rounded bg-muted" />
-      ) : (
-        <p className="text-3xl font-semibold tabular-nums tracking-tight">{value}</p>
-      )}
-
-      <p className="mt-1 text-sm text-muted-foreground">{label}</p>
-      {hint ? <p className="text-xs text-muted-foreground/80">{hint}</p> : null}
-    </CardContent>
-  </Card>
-)
 
 export default function AttendanceOverview() {
   const [overview, setOverview] = useState(null)
@@ -122,7 +104,7 @@ export default function AttendanceOverview() {
   }
 
   const overall = overview?.overall
-  const bands = overview?.bands ?? { total: 0, green: 0, amber: 0, red: 0 }
+  const bands = overview?.bands ?? { total: 0, noData: 0, green: 0, amber: 0, red: 0 }
   const classes = overview?.byClass ?? []
   const students = overview?.byStudent ?? []
   const tone = percentTone(overall?.rate ?? 0)
@@ -140,17 +122,15 @@ export default function AttendanceOverview() {
       label: 'Overall Attendance Rate',
       value: `${overall?.rate ?? 0}%`,
       hint: `${overall?.attended ?? 0} attended of ${overall?.marked ?? 0} marked`,
-      accent: 'border-t-purple-500',
-      iconClass: 'bg-purple-500/10 text-purple-600',
+      tone: 4,
     },
     {
       key: 'classes',
       icon: BookOpen,
       label: 'Classes',
       value: classes.length,
-      hint: `${classes.filter((c) => c.rate >= 90).length} above 90%`,
-      accent: 'border-t-emerald-500',
-      iconClass: 'bg-emerald-500/10 text-emerald-600',
+      hint: `${classes.filter((c) => c.marked > 0 && c.rate >= 90).length} above 90%`,
+      tone: 3,
     },
     {
       key: 'risk',
@@ -158,8 +138,7 @@ export default function AttendanceOverview() {
       label: 'Students at Risk (< 75%)',
       value: bands.red,
       hint: `of ${bands.total} students`,
-      accent: 'border-t-rose-500',
-      iconClass: 'bg-rose-500/10 text-rose-600',
+      tone: 5,
     },
   ]
 
@@ -196,7 +175,15 @@ export default function AttendanceOverview() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {statCards.map((card) => (
-          <StatCard key={card.key} {...card} loading={loading && !overview} />
+          <StatCard
+            key={card.key}
+            icon={card.icon}
+            label={card.label}
+            value={card.value}
+            hint={card.hint}
+            tone={card.tone}
+            loading={loading && !overview}
+          />
         ))}
       </div>
 
@@ -256,7 +243,8 @@ export default function AttendanceOverview() {
         <CardHeader>
           <CardTitle className="text-base">By Student</CardTitle>
           <CardDescription>
-            {bands.green} on track · {bands.amber} watch · {bands.red} at risk (of {bands.total} matching)
+            {bands.green} on track · {bands.amber} watch · {bands.red} at risk
+            {bands.noData ? ` · ${bands.noData} not marked yet` : ''} (of {bands.total} matching)
           </CardDescription>
         </CardHeader>
 

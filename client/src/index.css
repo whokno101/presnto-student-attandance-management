@@ -2,35 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens (PB-18). Colours are HSL channels consumed by tailwind.config.js
+ * as `hsl(var(--token))`, so components use semantic names (bg-success,
+ * text-destructive) instead of palette shades. Every text pairing is checked
+ * against WCAG 2.1 AA by `npm run check:contrast` — run it after editing.
+ * Documentation: docs/design-system.md
+ */
 @layer base {
   :root {
+    /* Surfaces */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
-
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 19% 38%;
 
+    /* Brand + actions */
     --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-
+    --primary-foreground: 0 0% 100%;
+    /* Hover fills go darker (never lighter), so white text keeps its contrast */
+    --primary-hover: 221.2 83.2% 45%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Status — also used for attendance (Present / Late / Absent / Excused) */
+    --success: 142.8 71.8% 29.2%;
+    --success-foreground: 0 0% 100%;
+    --warning: 26 90.5% 37.1%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-hover: 0 73.7% 41.8%;
+    --info: 263.4 70% 50.4%;
+    --info-foreground: 0 0% 100%;
 
+    /* Lines + focus */
     --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --input: 215 16% 57%;
     --ring: 221.2 83.2% 53.3%;
+
+    /* Decorative accents for stat cards and charts (never the only signal) */
+    --chart-1: 221.2 83.2% 53.3%;
+    --chart-2: 24.6 95% 53.1%;
+    --chart-3: 142.1 76.2% 36.3%;
+    --chart-4: 262.1 83.3% 57.8%;
+    --chart-5: 0 72.2% 50.6%;
 
     --radius: 0.5rem;
   }
@@ -38,31 +60,40 @@
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
 
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-hover: 213.1 93.9% 67.8%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 222.2 47.4% 11.2%;
+    --warning: 37.7 92.1% 50.2%;
+    --warning-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 222.2 47.4% 11.2%;
+    --destructive-hover: 0 90.6% 70.8%;
+    --info: 255.1 91.7% 76.3%;
+    --info-foreground: 222.2 47.4% 11.2%;
 
     --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --input: 215 16% 47%;
+    --ring: 217.2 91.2% 59.8%;
+
+    --chart-1: 217.2 91.2% 59.8%;
+    --chart-2: 27 96% 61%;
+    --chart-3: 142.1 70.6% 45.3%;
+    --chart-4: 255.1 91.7% 76.3%;
+    --chart-5: 0 84.2% 60.2%;
   }
 }
 
@@ -70,8 +101,29 @@
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-foreground antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  /*
+   * Fallback focus indicator for anything without its own ring (links, native
+   * buttons). Components that draw a ring set `focus-visible:outline-none`.
+   */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

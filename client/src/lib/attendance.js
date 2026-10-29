@@ -4,21 +4,28 @@ export const STATUS_META = {
   present: {
     label: 'Present',
     variant: 'success',
-    active: 'bg-emerald-600 text-white shadow-sm',
+    active: 'bg-success text-success-foreground shadow-sm',
   },
   late: {
     label: 'Late',
     variant: 'warning',
-    active: 'bg-amber-500 text-white shadow-sm',
+    active: 'bg-warning text-warning-foreground shadow-sm',
   },
   absent: {
     label: 'Absent',
     variant: 'destructive',
-    active: 'bg-rose-600 text-white shadow-sm',
+    active: 'bg-destructive text-destructive-foreground shadow-sm',
+  },
+  excused: {
+    label: 'Excused',
+    variant: 'info',
+    active: 'bg-info text-info-foreground shadow-sm',
   },
 }
 
-export const STATUS_ORDER = ['present', 'late', 'absent']
+export const STATUS_ORDER = ['present', 'late', 'absent', 'excused']
+
+export const STATUS_OPTIONS = STATUS_ORDER.map((value) => ({ value, label: STATUS_META[value].label }))
 
 /** Local calendar date -> `YYYY-MM-DD` (the format the API expects). */
 export const toYmd = (date) => {
@@ -44,7 +51,10 @@ const LOCAL_LONG = new Intl.DateTimeFormat('en-GB', {
 })
 
 /** Server dates are UTC midnight of a calendar day — never shift them. */
-export const formatDay = (value) => UTC_LONG.format(new Date(value))
+export const formatDay = (value) => {
+  const date = new Date(value)
+  return value == null || Number.isNaN(date.getTime()) ? '—' : UTC_LONG.format(date)
+}
 
 /** The picker holds a local Date, so format that one locally. */
 export const formatPickedDay = (value) => LOCAL_LONG.format(value)
@@ -57,17 +67,17 @@ export const percentTone = (percentage) => {
 }
 
 export const TONE_TEXT = {
-  strong: 'text-emerald-600',
-  fair: 'text-amber-600',
-  low: 'text-rose-600',
+  strong: 'text-success',
+  fair: 'text-warning',
+  low: 'text-destructive',
 }
 
 export const TONE_BADGE = { strong: 'success', fair: 'warning', low: 'destructive' }
 
 export const TONE_BAR = {
-  strong: 'bg-emerald-600',
-  fair: 'bg-amber-500',
-  low: 'bg-rose-600',
+  strong: 'bg-success',
+  fair: 'bg-warning',
+  low: 'bg-destructive',
 }
 
 export const TONE_LABEL = { strong: 'On track', fair: 'Watch', low: 'At risk' }

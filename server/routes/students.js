@@ -55,7 +55,7 @@ router.post(
   requireRole('admin'),
   validate(studentCreateSchema),
   asyncHandler(async (req, res) => {
-    const student = await studentService.create(req.body);
+    const student = await studentService.create(req.body, req.user);
     res.status(201).json({ data: student, message: 'Student created' });
   })
 );
@@ -65,7 +65,7 @@ router.put(
   requireRole('admin'),
   validate(studentUpdateSchema),
   asyncHandler(async (req, res) => {
-    const student = await studentService.update(req.params.id, req.body);
+    const student = await studentService.update(req.params.id, req.body, req.user);
     res.json({ data: student, message: 'Student updated' });
   })
 );
@@ -74,7 +74,7 @@ router.delete(
   '/:id',
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const student = await studentService.remove(req.params.id);
+    const student = await studentService.remove(req.params.id, req.user);
     res.json({ data: student, message: 'Student deactivated' });
   })
 );

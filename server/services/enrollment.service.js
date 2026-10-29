@@ -14,6 +14,7 @@ const { ApiError } = require('../utils/apiError');
 const { escapeRegex } = require('../utils/query');
 const { requireFacultyProfile, requireStudentProfile } = require('./access.service');
 const { FACULTY_POPULATE, toDTO, findByIdOrThrow } = require('./class.service');
+const auditService = require('./audit.service');
 
 const asId = (value) => (value ? String(value) : null);
 
@@ -40,11 +41,12 @@ const enrolledClassIdSet = async (studentId) => {
  * Enrolls one student in one class.
  * @param {{ classId: string, studentId: string }} input
  */
-const enroll = async ({ classId, studentId }) => {
-  const classDoc = await Class.findById(classId).select('_id code name capacity students');
+const enroll = async ({ classId, studentId, actor }) => {
+  const classDoc = await Class.findById(classId).select('_id code name department capacity students archivedAt');
   if (!classDoc) throw ApiError.notFound('Class not found');
+  if (classDoc.archivedAt) throw ApiError.conflict(`${classDoc.code} is archived and is not taking enrollments`);
 
-  const student = await Student.findById(studentId).select('_id studentId');
+  const student = await Student.findById(studentId).select('_id studentId user').populate('user', 'name');
   if (!student) throw ApiError.notFound('Student not found');
 
   const alreadyEnrolled = (classDoc.students || []).some((id) => asId(id) === asId(studentId));
@@ -90,15 +92,25 @@ const enroll = async ({ classId, studentId }) => {
     throw err;
   }
 
+  await auditService.record({
+    actor,
+    action: 'enrollment.added',
+    entityType: 'Student',
+    entityId: student._id,
+    classDoc,
+    summary: `Enrolled ${student.user?.name ?? 'student'} (${student.studentId}) in ${classDoc.code}`,
+  });
+
   return toDTO(await findByIdOrThrow(classDoc._id));
 };
 
 /** Removes one student from one class. */
-const unenroll = async ({ classId, studentId }) => {
-  const classDoc = await Class.findById(classId).select('_id students');
+const unenroll = async ({ classId, studentId, actor }) => {
+  const classDoc = await Class.findById(classId).select('_id code department students archivedAt');
   if (!classDoc) throw ApiError.notFound('Class not found');
+  if (classDoc.archivedAt) throw ApiError.conflict(`${classDoc.code} is archived; its roster is kept as history`);
 
-  const student = await Student.findById(studentId).select('_id');
+  const student = await Student.findById(studentId).select('_id studentId user').populate('user', 'name');
   if (!student) throw ApiError.notFound('Student not found');
 
   const result = await Class.updateOne(
@@ -123,6 +135,15 @@ const unenroll = async ({ classId, studentId }) => {
     throw err;
   }
 
+  await auditService.record({
+    actor,
+    action: 'enrollment.removed',
+    entityType: 'Student',
+    entityId: student._id,
+    classDoc,
+    summary: `Unenrolled ${student.user?.name ?? 'student'} (${student.studentId}) from ${classDoc.code}`,
+  });
+
   // Attendance history is deliberately kept: it is an audit trail of the time
   // the student actually spent in the class.
   return toDTO(await findByIdOrThrow(classDoc._id));
@@ -135,7 +156,7 @@ const unenroll = async ({ classId, studentId }) => {
 const listMine = async (user) => {
   if (user.role === 'faculty') {
     const profile = await requireFacultyProfile(user.id);
-    const rows = await Class.find({ faculty: profile._id })
+    const rows = await Class.find({ faculty: profile._id, archivedAt: null })
       .populate(FACULTY_POPULATE)
       .sort({ code: 1 });
     return { role: 'faculty', data: rows.map(toDTO) };
@@ -143,14 +164,14 @@ const listMine = async (user) => {
 
   if (user.role === 'student') {
     const profile = await requireStudentProfile(user.id);
-    const rows = await Class.find({ students: profile._id })
+    const rows = await Class.find({ students: profile._id, archivedAt: null })
       .populate(FACULTY_POPULATE)
       .sort({ code: 1 });
     const enrolledIds = new Set(rows.map((row) => String(row._id)));
     return { role: 'student', data: rows.map((row) => withStudentState(row, enrolledIds)) };
   }
 
-  const rows = await Class.find({}).populate(FACULTY_POPULATE).sort({ code: 1 });
+  const rows = await Class.find({ archivedAt: null }).populate(FACULTY_POPULATE).sort({ code: 1 });
   return { role: 'admin', data: rows.map(toDTO) };
 };
 
@@ -160,11 +181,11 @@ const listMine = async (user) => {
  */
 const listAvailable = async (user, query = {}) => {
   const search = typeof query.search === 'string' ? query.search.trim() : '';
-  let filter = {};
+  const filter = { archivedAt: null };
 
   if (search) {
     const rx = new RegExp(escapeRegex(search), 'i');
-    filter = { $or: [{ name: rx }, { code: rx }, { department: rx }] };
+    filter.$or = [{ name: rx }, { code: rx }, { department: rx }];
   }
 
   const profile =
