@@ -202,3 +202,116 @@
     }
   }
 }
+
+/*
+ * Stacked tables (phones). Each row becomes a card and every cell prints its
+ * column header (data-label, set by useStackLabels) in a fixed label column.
+ * Sortable headers stay visible as a row of sort controls above the cards.
+ */
+@layer components {
+  @media (max-width: 639px) {
+    .table-stack,
+    .table-stack > tbody,
+    .table-stack > tbody > tr,
+    .table-stack > tbody > tr > td {
+      display: block;
+      width: 100%;
+    }
+
+    /* Cells the page hides on small screens stay hidden. */
+    .table-stack > tbody > tr > td.hidden {
+      display: none;
+    }
+
+    .table-stack > thead {
+      display: block;
+    }
+
+    .table-stack > thead > tr {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 0.25rem;
+      border-bottom-width: 1px;
+    }
+
+    .table-stack > thead > tr:not(:has(button)) {
+      display: none;
+    }
+
+    .table-stack > thead th:not(:has(button)) {
+      display: none;
+    }
+
+    .table-stack > thead th {
+      height: auto;
+      padding: 0.5rem 0.75rem;
+      white-space: nowrap;
+    }
+
+    .table-stack > tbody > tr {
+      padding: 0.75rem;
+    }
+
+    .table-stack > tbody > tr > td {
+      position: relative;
+      min-width: 0;
+      max-width: none;
+      min-height: 1.75rem;
+      padding: 0.25rem 0 0.25rem 7.25rem;
+      padding-inline: 7.25rem 0;
+      text-align: start;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+
+    .table-stack > tbody > tr > td::before {
+      content: attr(data-label);
+      position: absolute;
+      inset-inline-start: 0;
+      top: 0.4rem;
+      width: 6.5rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: theme('fontFamily.display');
+      font-size: 0.72rem;
+      font-weight: 600;
+      line-height: 1.25;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: hsl(var(--muted-foreground));
+    }
+
+    /* No header (actions, full-width empty states): the value takes the row. */
+    .table-stack > tbody > tr > td[data-label=''],
+    .table-stack > tbody > tr > td:not([data-label]) {
+      padding-inline-start: 0;
+      padding-top: 0.5rem;
+    }
+
+    .table-stack > tbody > tr > td[data-label='']::before,
+    .table-stack > tbody > tr > td:not([data-label])::before {
+      display: none;
+    }
+
+    /* `stack-full`: a control that needs the card's full width (status toggles). */
+    .table-stack > tbody > tr > td.stack-full {
+      padding-inline-start: 0;
+      padding-top: 0.5rem;
+    }
+
+    .table-stack > tbody > tr > td.stack-full::before {
+      display: none;
+    }
+
+    .table-stack > tbody > tr > td[colspan] {
+      text-align: center;
+    }
+
+    /* Flex rows inside a cell (action buttons, status toggles) may wrap. */
+    .table-stack > tbody > tr > td .flex {
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+  }
+}

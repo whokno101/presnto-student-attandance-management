@@ -1,12 +1,28 @@
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
+import useStackLabels from '@/hooks/useStackLabels'
 
-const Table = React.forwardRef(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table ref={ref} className={cn('w-full caption-bottom text-sm tabular-nums', className)} {...props} />
-  </div>
-))
+/**
+ * Below `sm` a table stacks into one card per row, each value labelled with its
+ * column header (`.table-stack` in index.css). Pass `stack={false}` for narrow
+ * tables that already fit a phone; they keep scrolling sideways instead.
+ */
+const Table = React.forwardRef(({ className, stack = true, ...props }, ref) => {
+  const tableRef = React.useRef(null)
+  React.useImperativeHandle(ref, () => tableRef.current)
+  useStackLabels(tableRef)
+
+  return (
+    <div className="relative w-full overflow-auto">
+      <table
+        ref={tableRef}
+        className={cn('w-full caption-bottom text-sm tabular-nums', stack && 'table-stack', className)}
+        {...props}
+      />
+    </div>
+  )
+})
 Table.displayName = 'Table'
 
 const TableHeader = React.forwardRef(({ className, ...props }, ref) => (
