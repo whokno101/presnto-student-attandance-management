@@ -112,7 +112,7 @@ export default function Notifications() {
                       {!item.read ? <Badge>Unread</Badge> : null}
                       {item.resolved ? (
                         <Badge variant="success">
-                          <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" />
+                          <CheckCircle2 className="me-1 h-3 w-3" aria-hidden="true" />
                           No longer at risk
                         </Badge>
                       ) : null}

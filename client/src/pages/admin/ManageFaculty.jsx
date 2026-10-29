@@ -114,7 +114,7 @@ export default function ManageFaculty() {
                 <TableHead>Department</TableHead>
                 <TableHead>Classes Assigned</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-end">Actions</TableHead>
               </TableRow>
             </TableHeader>
 

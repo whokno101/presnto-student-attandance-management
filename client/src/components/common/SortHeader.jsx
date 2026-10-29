@@ -19,11 +19,11 @@ export default function SortHeader({ label, column, sort, onSort, defaultDir = '
         type="button"
         variant="ghost"
         size="sm"
-        className={cn('-ml-3 h-8 px-2', active && 'text-foreground')}
+        className={cn('-ms-3 h-8 px-2', active && 'text-foreground')}
         onClick={() => onSort(active ? { key: column, dir: sort.dir === 'asc' ? 'desc' : 'asc' } : { key: column, dir: defaultDir })}
       >
         {label}
-        <Icon className={cn('ml-1 h-3.5 w-3.5', !active && 'text-muted-foreground')} aria-hidden="true" />
+        <Icon className={cn('ms-1 h-3.5 w-3.5', !active && 'text-muted-foreground')} aria-hidden="true" />
       </Button>
     </TableHead>
   )

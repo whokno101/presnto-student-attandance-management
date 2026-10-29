@@ -186,7 +186,7 @@ for (const [email, pages] of [
   await page.waitForLoadState('networkidle')
   await page.waitForTimeout(300)
   const imgs = await page.$$('img')
-  const nameVisible = await page.getByText('UniTrack', { exact: true }).filter({ visible: true }).count() > 0
+  const nameVisible = await page.getByText('Presnto', { exact: true }).filter({ visible: true }).count() > 0
   const fallbackBadge = await page.locator('span[aria-hidden=true]', { hasText: /^U$/ }).filter({ visible: true }).count()
   check('logo fallback replaces a broken image', imgs.length === 0 && nameVisible && fallbackBadge > 0, `imgs=${imgs.length} name=${nameVisible} badge=${fallbackBadge}`)
   await page.screenshot({ path: `${SHOTS}logo-fallback.png`, clip: { x: 0, y: 0, width: 1280, height: 200 } })

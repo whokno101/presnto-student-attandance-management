@@ -54,12 +54,17 @@ export default function Analytics() {
     .filter(Boolean)
     .join(' · ')
 
+  // Sparklines reuse the trend series (same filters and range as the cards).
+  const points = data?.trend?.points ?? []
+  const per = data?.trend?.unit === 'week' ? 'week' : 'day'
+  const series = (field) => points.map((p) => p[field])
+
   const cards = metrics
     ? [
-        { key: 'rate', icon: BarChart3, label: 'Overall attendance rate', value: metrics.rate == null ? '—' : `${metrics.rate}%`, hint: `${metrics.attended} attended of ${metrics.eligible} eligible`, tone: 1 },
+        { key: 'rate', icon: BarChart3, label: 'Overall attendance rate', value: metrics.rate == null ? '—' : `${metrics.rate}%`, hint: `${metrics.attended} attended of ${metrics.eligible} eligible`, tone: 1, trend: series('rate'), trendLabel: `Attendance rate by ${per} over the selected range` },
         { key: 'students', icon: Users, label: 'Total students', value: metrics.totalStudents, hint: `Enrolled in ${metrics.classes} classes`, tone: 3 },
-        { key: 'absent', icon: UserX, label: 'Students absent in period', value: metrics.studentsAbsent, hint: `${metrics.absences} unexcused absences`, tone: 2 },
-        { key: 'sessions', icon: CalendarDays, label: 'Sessions held', value: metrics.sessionsHeld, hint: 'With attendance recorded', tone: 4 },
+        { key: 'absent', icon: UserX, label: 'Students absent in period', value: metrics.studentsAbsent, hint: `${metrics.absences} unexcused absences`, tone: 2, trend: series('absent'), trendLabel: `Absences by ${per} over the selected range`, trendMin: 0 },
+        { key: 'sessions', icon: CalendarDays, label: 'Sessions held', value: metrics.sessionsHeld, hint: 'With attendance recorded', tone: 4, trend: series('sessions'), trendLabel: `Sessions by ${per} over the selected range`, trendMin: 0 },
         { key: 'below', icon: BookOpen, label: `Classes below ${data.threshold}%`, value: metrics.classesBelowThreshold, hint: `of ${metrics.classes} classes`, tone: 5 },
         { key: 'risk', icon: AlertTriangle, label: 'Students at risk', value: metrics.atRiskStudents, hint: `Below ${policy.studentRiskRate}% or ${policy.riskMinUnexcusedAbsences}+ absences`, tone: 5 },
       ]
@@ -119,8 +124,8 @@ export default function Analytics() {
       {data && !data.empty ? (
         <div className={cn('space-y-5 transition-opacity', query.loading && 'opacity-60')} aria-busy={query.loading}>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {cards.map((card) => (
-              <StatCard key={card.key} icon={card.icon} label={card.label} value={card.value} hint={card.hint} tone={card.tone} />
+            {cards.map(({ key, ...card }) => (
+              <StatCard key={key} {...card} />
             ))}
           </div>
 
@@ -157,16 +162,16 @@ export default function Analytics() {
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <TableHead>Department</TableHead>
-                      <TableHead className="text-right">Classes</TableHead>
-                      <TableHead className="text-right">Rate</TableHead>
+                      <TableHead className="text-end">Classes</TableHead>
+                      <TableHead className="text-end">Rate</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data.byDepartment.map((d) => (
                       <TableRow key={d.department}>
                         <TableCell className="font-medium">{d.department}</TableCell>
-                        <TableCell className="text-right tabular-nums">{d.classes}</TableCell>
-                        <TableCell className="text-right tabular-nums">{d.eligible ? `${d.rate}%` : '—'}</TableCell>
+                        <TableCell className="text-end tabular-nums">{d.classes}</TableCell>
+                        <TableCell className="text-end tabular-nums">{d.eligible ? `${d.rate}%` : '—'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

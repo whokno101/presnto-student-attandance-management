@@ -200,7 +200,7 @@ export default function ExcuseReview() {
                     <TableHead>Reason</TableHead>
                     <TableHead>Submitted</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
+                    <TableHead className="text-end">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -245,7 +245,7 @@ export default function ExcuseReview() {
                       <TableCell>
                         <ExcuseStatusBadge status={e.status} />
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <Button size="sm" variant={e.status === 'pending' ? 'default' : 'outline'} onClick={() => setActive(e)} aria-label={`${e.status === 'pending' ? 'Review' : 'View'} excuse from ${e.student?.name}`}>
                           {e.status === 'pending' ? 'Review' : 'View'}
                         </Button>

@@ -1,10 +1,11 @@
 import { useLocation, useNavigate } from 'react-router-dom'
 import { LogOut, Menu } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import NotificationBell from '@/components/layout/NotificationBell'
-import { navItemsFor, ROLE_LABEL } from '@/lib/navigation'
+import ThemeToggle from '@/components/common/ThemeToggle'
+import BoardClock from '@/components/common/BoardClock'
+import { navItemsFor } from '@/lib/navigation'
 import { useAuth } from '@/context/AuthContext'
 
 const initialsOf = (name = '') =>
@@ -35,7 +36,7 @@ export default function Topbar({ onOpenSidebar, menuButtonRef }) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-card/95 px-4 backdrop-blur sm:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-card px-4 sm:px-6">
       <Button
         variant="ghost"
         size="icon"
@@ -48,32 +49,31 @@ export default function Topbar({ onOpenSidebar, menuButtonRef }) {
       </Button>
 
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-base font-semibold">{titleFor(pathname, user?.role)}</h1>
-        <p className="truncate text-xs text-muted-foreground">University Attendance Management System</p>
+        <h1 className="truncate font-display text-[1.35rem] font-bold uppercase leading-none tracking-[0.04em] lg:sr-only">
+          {titleFor(pathname, user?.role)}
+        </h1>
+        <BoardClock showDay={false} className="mt-1 block text-muted-foreground lg:hidden" />
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
+        <ThemeToggle />
         <NotificationBell />
-        <div className="hidden text-right sm:block">
+        <div className="hidden text-end sm:block">
           <p className="max-w-[180px] truncate text-sm font-medium leading-tight">{user?.name}</p>
           <p className="max-w-[180px] truncate text-xs text-muted-foreground">{user?.email}</p>
         </div>
 
         <div
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary"
+          className="flex h-9 w-9 items-center justify-center rounded-md bg-foreground font-display text-sm font-bold tracking-wider text-background"
           aria-hidden="true"
           title={user?.name}
         >
           {initialsOf(user?.name)}
         </div>
 
-        <Badge variant="outline" className="hidden capitalize md:inline-flex">
-          {ROLE_LABEL[user?.role] || user?.role}
-        </Badge>
-
         <Button variant="outline" size="sm" onClick={handleLogout} title="Sign out">
           <LogOut className="h-4 w-4" />
-          <span className="hidden sm:inline">Logout</span>
+          <span className="hidden sm:inline">Sign out</span>
         </Button>
       </div>
     </header>

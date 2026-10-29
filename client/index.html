@@ -3,9 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#2563eb" />
+    <meta name="theme-color" content="#0b0d10" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>University Attendance Management System</title>
+    <title>Presnto · Attendance</title>
+    <script>
+      // Apply the saved theme before first paint (no light flash). Mirrors
+      // src/context/ThemeContext.jsx — keep the key and logic in sync.
+      try {
+        var t = localStorage.getItem('uams.theme')
+        if (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark')
+        }
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

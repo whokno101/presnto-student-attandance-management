@@ -141,7 +141,7 @@ export default function QrCheckin() {
           <CardHeader>
             <CardTitle className="text-base">Scan to check in</CardTitle>
             <CardDescription>
-              Students scan with the UniTrack Check in page or their phone camera. The code changes every {policy.qrRotationSeconds} seconds, so a photo of it stops working
+              Students scan with the Presnto Check in page or their phone camera. The code changes every {policy.qrRotationSeconds} seconds, so a photo of it stops working
               almost immediately.
             </CardDescription>
           </CardHeader>

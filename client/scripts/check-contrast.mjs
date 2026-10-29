@@ -63,7 +63,14 @@ const PAIRS = [
   ['warning-foreground', 'warning', TEXT, 'Late badge'],
   ['warning', 'background', TEXT, 'watch-rate text'],
   ['info-foreground', 'info', TEXT, 'Excused badge'],
+  ['signal-foreground', 'signal', TEXT, 'live / changed board rows'],
+  ['shell-foreground', 'shell', TEXT, 'sidebar and login board text'],
+  ['shell-muted', 'shell', TEXT, 'sidebar secondary text'],
+  ['shell-muted', 'shell-accent', TEXT, 'sidebar hovered items'],
+  ['shell-ok', 'shell', TEXT, 'board status: closed / on track'],
+  ['shell-alert', 'shell', TEXT, 'board status: low attendance'],
   ['ring', 'background', UI, 'focus ring'],
+  ['ring', 'card', UI, 'focus ring on surfaces'],
   ['input', 'background', UI, 'form control borders'],
 ]
 

@@ -5,3 +5,6 @@ import { twMerge } from 'tailwind-merge'
 export function cn(...inputs) {
   return twMerge(clsx(inputs))
 }
+
+/** JS animations must check this themselves; the CSS reduced-motion rule only covers CSS. */
+export const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches

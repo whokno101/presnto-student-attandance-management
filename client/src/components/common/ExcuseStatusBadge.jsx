@@ -14,7 +14,7 @@ export default function ExcuseStatusBadge({ status }) {
   const Icon = meta.icon
   return (
     <Badge variant={meta.variant}>
-      <Icon className="mr-1 h-3 w-3" aria-hidden="true" />
+      <Icon className="me-1 h-3 w-3" aria-hidden="true" />
       {meta.label}
     </Badge>
   )

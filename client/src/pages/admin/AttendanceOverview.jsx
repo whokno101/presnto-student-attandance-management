@@ -196,11 +196,11 @@ export default function AttendanceOverview() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="pl-4 sm:pl-6">Code</TableHead>
+                <TableHead className="ps-4 sm:ps-6">Code</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead className="hidden sm:table-cell">Faculty</TableHead>
-                <TableHead className="text-right">Students</TableHead>
-                <TableHead className="pr-4 sm:pr-6">Rate</TableHead>
+                <TableHead className="text-end">Students</TableHead>
+                <TableHead className="pe-4 sm:pe-6">Rate</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -225,11 +225,11 @@ export default function AttendanceOverview() {
 
               {classes.map((classDoc) => (
                 <TableRow key={classDoc.classId}>
-                  <TableCell className="pl-4 font-mono text-xs font-medium sm:pl-6">{classDoc.code}</TableCell>
+                  <TableCell className="ps-4 font-mono text-xs font-medium sm:ps-6">{classDoc.code}</TableCell>
                   <TableCell className="max-w-[220px] truncate font-medium">{classDoc.name}</TableCell>
                   <TableCell className="hidden text-muted-foreground sm:table-cell">{classDoc.faculty}</TableCell>
-                  <TableCell className="text-right tabular-nums">{classDoc.students}</TableCell>
-                  <TableCell className="pr-4 sm:pr-6">
+                  <TableCell className="text-end tabular-nums">{classDoc.students}</TableCell>
+                  <TableCell className="pe-4 sm:pe-6">
                     <RateCell rate={classDoc.rate} attended={classDoc.attended} marked={classDoc.marked} />
                   </TableCell>
                 </TableRow>
@@ -289,12 +289,12 @@ export default function AttendanceOverview() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className={cn('-ml-3 h-8 px-2', activeSort && 'text-foreground')}
+                        className={cn('-ms-3 h-8 px-2', activeSort && 'text-foreground')}
                         onClick={() => toggleSort(column.key)}
                         aria-label={`Sort by ${column.label}`}
                       >
                         {column.label}
-                        <Icon className={cn('ml-1 h-3.5 w-3.5', !activeSort && 'text-muted-foreground/60')} aria-hidden="true" />
+                        <Icon className={cn('ms-1 h-3.5 w-3.5', !activeSort && 'text-muted-foreground/60')} aria-hidden="true" />
                       </Button>
                     </TableHead>
                   )

@@ -11,6 +11,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { labelVariants } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import useApiQuery from '@/hooks/useApiQuery'
 import useFilterOptions from '@/hooks/useFilterOptions'
@@ -33,7 +34,7 @@ const EMPTY_FORM = { classId: '', room: '', startTime: '09:00', endTime: '10:30'
 function TimeField({ id, label, value, onChange }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="text-sm font-medium leading-none">
+      <label htmlFor={id} className={labelVariants()}>
         {label}
       </label>
       <Input id={id} type="time" value={value} onChange={(e) => onChange(e.target.value)} />
@@ -160,7 +161,7 @@ export default function Schedule() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <FilterSelect id="schedule-class" label="Class" value={form.classId} onChange={pickClass} options={classes} allLabel="Choose a class" />
             <div className="space-y-1.5">
-              <label htmlFor="schedule-room" className="text-sm font-medium leading-none">
+              <label htmlFor="schedule-room" className={labelVariants()}>
                 Room
               </label>
               <Input id="schedule-room" value={form.room} onChange={(e) => set('room')(e.target.value.toUpperCase())} placeholder="B-204" className="uppercase" />
@@ -267,7 +268,7 @@ export default function Schedule() {
                       <TableHead>Time</TableHead>
                       <TableHead>Room</TableHead>
                       <TableHead>Check</TableHead>
-                      <TableHead className="text-right">Keep</TableHead>
+                      <TableHead className="text-end">Keep</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -283,13 +284,13 @@ export default function Schedule() {
                           <TableCell className="min-w-[240px] text-sm">
                             {o.ok ? (
                               <Badge variant="success">
-                                <CheckCircle2 className="mr-1 h-3 w-3" aria-hidden="true" />
+                                <CheckCircle2 className="me-1 h-3 w-3" aria-hidden="true" />
                                 Available
                               </Badge>
                             ) : (
                               <>
                                 <Badge variant="destructive">
-                                  <AlertTriangle className="mr-1 h-3 w-3" aria-hidden="true" />
+                                  <AlertTriangle className="me-1 h-3 w-3" aria-hidden="true" />
                                   Conflict
                                 </Badge>
                                 {o.conflicts.map((c) => (
@@ -300,7 +301,7 @@ export default function Schedule() {
                               </>
                             )}
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-end">
                             <Button
                               size="sm"
                               variant="ghost"
@@ -349,7 +350,7 @@ export default function Schedule() {
                   <TableHead>Class</TableHead>
                   <TableHead>Room</TableHead>
                   <TableHead>Teacher</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-end">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -364,7 +365,7 @@ export default function Schedule() {
                     </TableCell>
                     <TableCell>{s.room}</TableCell>
                     <TableCell>{s.instructor ?? <span className="text-muted-foreground">Unassigned</span>}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       <Button
                         size="icon"
                         variant="ghost"

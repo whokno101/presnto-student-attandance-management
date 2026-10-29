@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AlertCircle, BookOpen, Loader2, SearchX } from 'lucide-react'
 
-import ClassCard from '@/components/classes/ClassCard'
+import ClassRows from '@/components/classes/ClassRows'
 import EmptyState from '@/components/common/EmptyState'
 import PageHeader from '@/components/common/PageHeader'
 import SearchInput from '@/components/common/SearchInput'
@@ -95,7 +95,7 @@ export default function EnrollClasses() {
 
     if (busy) {
       return (
-        <Button size="sm" className="w-full" disabled>
+        <Button size="sm" className="w-28" disabled>
           <Loader2 className="h-4 w-4 animate-spin" />
           Working…
         </Button>
@@ -107,7 +107,7 @@ export default function EnrollClasses() {
         <Button
           size="sm"
           variant="outline"
-          className="w-full"
+          className="w-28"
           onClick={() => handleUnenroll(classDoc)}
         >
           Unenroll
@@ -117,14 +117,14 @@ export default function EnrollClasses() {
 
     if (classDoc.isFull) {
       return (
-        <Button size="sm" className="w-full" disabled>
+        <Button size="sm" className="w-28" disabled>
           Class full
         </Button>
       )
     }
 
     return (
-      <Button size="sm" className="w-full" onClick={() => handleEnroll(classDoc)}>
+      <Button size="sm" className="w-28" onClick={() => handleEnroll(classDoc)}>
         Enroll
       </Button>
     )
@@ -151,17 +151,9 @@ export default function EnrollClasses() {
       />
 
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, index) => (
-            <Card key={`skeleton-${index}`}>
-              <CardContent className="space-y-3 p-5">
-                <div className="h-4 w-16 animate-pulse rounded bg-muted" />
-                <div className="h-5 w-3/4 animate-pulse rounded bg-muted" />
-                <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
-                <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-                <div className="h-9 w-full animate-pulse rounded bg-muted" />
-              </CardContent>
-            </Card>
+        <div className="space-y-2" role="status" aria-label="Loading the class catalog">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="h-14 animate-pulse rounded-md bg-muted" />
           ))}
         </div>
       ) : error ? (
@@ -194,16 +186,12 @@ export default function EnrollClasses() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {visible.map((classDoc) => (
-            <ClassCard
-              key={classDoc.id}
-              classDoc={classDoc}
-              badge={classDoc.isEnrolled ? <Badge variant="success">Enrolled</Badge> : null}
-              footer={renderAction(classDoc)}
-            />
-          ))}
-        </div>
+        <ClassRows
+          classes={visible}
+          caption="Class catalog"
+          badge={(classDoc) => (classDoc.isEnrolled ? <Badge variant="success">Enrolled</Badge> : null)}
+          action={renderAction}
+        />
       )}
     </div>
   )

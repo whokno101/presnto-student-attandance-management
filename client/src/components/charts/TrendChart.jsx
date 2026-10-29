@@ -97,22 +97,22 @@ export default function TrendChart({ title, points, unit = 'day', threshold, hei
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead>{unit === 'week' ? 'Week' : 'Day'}</TableHead>
-                <TableHead className="text-right">Rate</TableHead>
-                <TableHead className="text-right">Attended / eligible</TableHead>
-                <TableHead className="text-right">Absences</TableHead>
-                <TableHead className="text-right">Sessions</TableHead>
+                <TableHead className="text-end">Rate</TableHead>
+                <TableHead className="text-end">Attended / eligible</TableHead>
+                <TableHead className="text-end">Absences</TableHead>
+                <TableHead className="text-end">Sessions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.map((p) => (
                 <TableRow key={p.period}>
                   <TableCell>{periodLabel(p.period, unit, true)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{p.rate == null ? '—' : `${p.rate}%`}</TableCell>
-                  <TableCell className="text-right tabular-nums">
+                  <TableCell className="text-end tabular-nums">{p.rate == null ? '—' : `${p.rate}%`}</TableCell>
+                  <TableCell className="text-end tabular-nums">
                     {p.attended}/{p.eligible}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{p.absent}</TableCell>
-                  <TableCell className="text-right tabular-nums">{p.sessions}</TableCell>
+                  <TableCell className="text-end tabular-nums">{p.absent}</TableCell>
+                  <TableCell className="text-end tabular-nums">{p.sessions}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

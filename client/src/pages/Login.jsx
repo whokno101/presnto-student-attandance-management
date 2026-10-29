@@ -1,22 +1,65 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 import Logo from '@/components/common/Logo'
+import BoardClock from '@/components/common/BoardClock'
+import DeparturesBoard from '@/components/board/DeparturesBoard'
+import { Pass, PassPerforation } from '@/components/board/Pass'
+import ThemeToggle from '@/components/common/ThemeToggle'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/context/AuthContext'
 import { getErrorCode, getErrorMessage } from '@/lib/api'
 import { homeFor } from '@/lib/navigation'
+import { prefersReducedMotion } from '@/lib/utils'
 
 const DEMO_ACCOUNTS = [
   { role: 'Admin', email: 'admin@university.edu' },
   { role: 'Faculty', email: 'faculty1@university.edu' },
   { role: 'Student', email: 'student1@university.edu' },
 ]
+
+const ROSTER = 140
+
+/**
+ * Sample timetable for the sign-in board. Not live data: it is labelled as a
+ * sample on screen. `tick` advances the live row's check-ins and, on the second
+ * tick, moves one class to another hall so the board shows a change landing.
+ */
+const sampleSessions = (tick) => {
+  const checkedIn = Math.min(ROSTER - 12, 96 + tick * 4)
+  const moved = tick >= 2
+  return [
+    { id: 'math110', time: '08:00', code: 'MATH 110', title: 'Calculus I', hall: 'A-101', status: { label: 'Closed · 94%', tone: 'ok' } },
+    { id: 'cs201', time: '09:00', code: 'CS 201', title: 'Data Structures', hall: 'B-214', status: { label: `Check-in · ${checkedIn}/${ROSTER}`, tone: 'live' } },
+    { id: 'phy120', time: '10:30', code: 'PHY 120', title: 'Mechanics', hall: 'C-008', status: { label: 'Scheduled', tone: 'muted' } },
+    {
+      id: 'eng105',
+      time: '11:00',
+      code: 'ENG 105',
+      title: 'Academic Writing',
+      hall: moved ? 'D-302' : 'D-110',
+      status: { label: moved ? 'Hall changed' : 'Scheduled', tone: 'muted' },
+      changed: moved ? 'hall' : undefined,
+      changedAt: moved ? 1 : undefined,
+    },
+    { id: 'cs240', time: '13:30', code: 'CS 240', title: 'Databases', hall: 'B-214', status: { label: 'Scheduled', tone: 'muted' } },
+    { id: 'eco101', time: '15:00', code: 'ECO 101', title: 'Microeconomics', hall: 'A-220', status: { label: 'Last · 58%', tone: 'alert' } },
+  ]
+}
+
+function useBoardTick() {
+  const [tick, setTick] = useState(() => (prefersReducedMotion() ? 2 : 0))
+  useEffect(() => {
+    if (prefersReducedMotion()) return undefined
+    const timer = setInterval(() => setTick((t) => (t >= 6 ? t : t + 1)), 4000)
+    return () => clearInterval(timer)
+  }, [])
+  return tick
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -56,6 +99,8 @@ export default function Login() {
   const [errors, setErrors] = useState({})
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const tick = useBoardTick()
+  const sessions = useMemo(() => sampleSessions(tick), [tick])
 
   const reason = searchParams.get('reason')
   const reasonNotice = useMemo(() => (reason ? REASON_MESSAGES[reason] : null), [reason])
@@ -124,118 +169,131 @@ export default function Login() {
     setErrors({})
   }
 
+  const fieldLabel = 'mb-1.5 block font-display text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground'
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4 sm:p-6">
-      <div className="grid w-full max-w-4xl overflow-hidden rounded-2xl border bg-card shadow-lg md:grid-cols-2">
-        <div className="hidden flex-col justify-between bg-primary p-8 text-primary-foreground md:flex">
-          <Logo inverse subtitle="Attendance System" />
-          <div className="space-y-3">
-            <h2 className="text-2xl font-semibold leading-tight">Attendance, without the paperwork.</h2>
-            <p className="text-sm">
-              One place for administrators, faculty and students to manage classes, rosters and daily attendance.
-            </p>
+    <div className="relative min-h-screen bg-shell text-shell-foreground">
+      <ThemeToggle className="absolute end-4 top-4 z-10 text-shell-foreground hover:bg-shell-accent hover:text-shell-foreground focus-visible:ring-shell-foreground focus-visible:ring-offset-shell" />
+
+      <div className="mx-auto grid min-h-screen max-w-[1440px] gap-10 px-5 py-8 sm:px-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center lg:gap-16 lg:px-14 xl:gap-24">
+        <section className="order-2 min-w-0 lg:order-1" aria-labelledby="board-title">
+          <Logo inverse size={36} subtitle="Attendance" className="hidden lg:flex" />
+
+          <div className="mt-6 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-b border-shell-border pb-3 lg:mt-14">
+            <h2 id="board-title" className="font-display text-[1.05rem] font-semibold uppercase tracking-[0.14em] text-shell-foreground">
+              Today’s sessions
+            </h2>
+            <BoardClock className="text-sm text-shell-muted" />
           </div>
-          <ul className="space-y-2 text-sm">
-            <li>Role-based access for admins, faculty and students</li>
-            <li>Mark and review attendance in seconds</li>
-            <li>Live per-class attendance percentages</li>
-          </ul>
-        </div>
 
-        <div className="p-6 sm:p-8">
-          <Card className="border-0 shadow-none">
-            <CardHeader className="px-0 pt-0">
-              <Logo className="mb-4 md:hidden" subtitle="Attendance System" />
-              <CardTitle className="text-2xl">Sign in</CardTitle>
-              <CardDescription>Use your university account to continue.</CardDescription>
-            </CardHeader>
+          <DeparturesBoard rows={sessions} caption="Sample timetable of today's sessions" className="mt-1" />
 
-            <CardContent className="px-0 pb-0">
-              <form onSubmit={handleSubmit} noValidate className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      autoComplete="email"
-                      placeholder="you@university.edu"
-                      className="pl-9"
-                      value={form.email}
-                      onChange={handleChange('email')}
-                      aria-invalid={Boolean(errors.email)}
-                      aria-describedby={errors.email ? 'email-error' : undefined}
-                      disabled={submitting}
-                    />
-                  </div>
-                  {errors.email ? (
-                    <p id="email-error" role="alert" className="text-xs font-medium text-destructive">
-                      {errors.email}
-                    </p>
-                  ) : null}
-                </div>
+          <p className="mt-4 max-w-prose text-sm text-shell-muted">
+            Sample timetable. After you sign in, the board shows your own classes, live check-ins and any hall changes.
+          </p>
+        </section>
 
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Lock className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      placeholder="••••••••"
-                      className="pl-9 pr-10"
-                      value={form.password}
-                      onChange={handleChange('password')}
-                      aria-invalid={Boolean(errors.password)}
-                      aria-describedby={errors.password ? 'password-error' : undefined}
-                      disabled={submitting}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-2 top-2 rounded-sm p-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  {errors.password ? (
-                    <p id="password-error" role="alert" className="text-xs font-medium text-destructive">
-                      {errors.password}
-                    </p>
-                  ) : null}
-                </div>
+        <section className="order-1 lg:order-2" aria-labelledby="signin-title">
+          <Logo inverse size={32} subtitle="Attendance" className="mb-6 lg:hidden" />
 
-                <Button type="submit" className="w-full" disabled={submitting}>
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {submitting ? 'Signing in...' : 'Sign in'}
-                </Button>
-              </form>
-
-              <div className="mt-6 rounded-lg border border-dashed p-3">
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Demo accounts · password Password@123
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {DEMO_ACCOUNTS.map((account) => (
-                    <Button
-                      key={account.email}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fillDemo(account.email)}
-                      disabled={submitting}
-                    >
-                      {account.role}
-                    </Button>
-                  ))}
-                </div>
+          <Pass className="shadow-[0_32px_80px_-32px_rgb(0_0_0/0.75)]">
+            <div className="flex items-start justify-between gap-4 px-6 pb-5 pt-6">
+              <div>
+                <h1 id="signin-title" className="font-display text-[2rem] font-bold uppercase leading-none tracking-[0.03em]">
+                  Sign in
+                </h1>
+                <p className="mt-2 text-[0.95rem] text-muted-foreground">Use your university account.</p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <BoardClock showDay={false} className="pt-1 text-muted-foreground" />
+            </div>
+
+            <PassPerforation ground="bg-shell" />
+
+            <form onSubmit={handleSubmit} noValidate className="space-y-4 px-6 pb-6 pt-5">
+              <div>
+                <Label htmlFor="email" className={fieldLabel}>
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@university.edu"
+                  className="h-12 font-mono text-[0.95rem]"
+                  value={form.email}
+                  onChange={handleChange('email')}
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? 'email-error' : undefined}
+                  disabled={submitting}
+                />
+                {errors.email ? (
+                  <p id="email-error" role="alert" className="mt-1.5 text-sm font-medium text-destructive">
+                    {errors.email}
+                  </p>
+                ) : null}
+              </div>
+
+              <div>
+                <Label htmlFor="password" className={fieldLabel}>
+                  Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    className="h-12 pe-12 font-mono text-[0.95rem]"
+                    value={form.password}
+                    onChange={handleChange('password')}
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby={errors.password ? 'password-error' : undefined}
+                    disabled={submitting}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute end-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.password ? (
+                  <p id="password-error" role="alert" className="mt-1.5 text-sm font-medium text-destructive">
+                    {errors.password}
+                  </p>
+                ) : null}
+              </div>
+
+              <Button type="submit" size="lg" className="mt-2 w-full justify-between" disabled={submitting}>
+                <span>{submitting ? 'Signing in…' : 'Sign in'}</span>
+                {submitting ? <Loader2 className="animate-spin" aria-hidden="true" /> : <ArrowRight className="rtl:-scale-x-100" aria-hidden="true" />}
+              </Button>
+            </form>
+
+            <PassPerforation ground="bg-shell" />
+
+            <div className="px-6 pb-6 pt-5">
+              <p className="font-display text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Demo accounts · <span className="font-mono normal-case tracking-normal">Password@123</span>
+              </p>
+              <div className="mt-3 grid grid-cols-3 divide-x divide-border rounded-md border rtl:divide-x-reverse">
+                {DEMO_ACCOUNTS.map((account) => (
+                  <button
+                    key={account.email}
+                    type="button"
+                    onClick={() => fillDemo(account.email)}
+                    disabled={submitting}
+                    className="px-2 py-2.5 font-display text-[0.95rem] font-semibold uppercase tracking-[0.06em] transition-colors first:rounded-s-md last:rounded-e-md hover:bg-foreground hover:text-background focus-visible:relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                  >
+                    {account.role}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </Pass>
+        </section>
       </div>
     </div>
   )

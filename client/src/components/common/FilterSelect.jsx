@@ -1,4 +1,9 @@
+import { labelVariants } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+/** Native controls (date, select) sized and styled to match Input and SelectTrigger. */
+export const nativeControlClass =
+  'flex h-10 w-full rounded-md border border-input bg-card px-3 py-1 text-[0.95rem] transition-colors hover:border-foreground/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 
 /** Radix Select cannot hold '', so "no filter" is this sentinel. */
 export const ALL = 'all'
@@ -10,7 +15,7 @@ export const ALL = 'all'
 export default function FilterSelect({ id, label, value, onChange, options, allLabel = 'All', className = '' }) {
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <label htmlFor={id} className="text-sm font-medium leading-none">
+      <label htmlFor={id} className={labelVariants()}>
         {label}
       </label>
       <Select value={value || ALL} onValueChange={(next) => onChange(next === ALL ? '' : next)}>
@@ -34,7 +39,7 @@ export default function FilterSelect({ id, label, value, onChange, options, allL
 export function DateFilter({ id, label, value, onChange, min, max }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="text-sm font-medium leading-none">
+      <label htmlFor={id} className={labelVariants()}>
         {label}
       </label>
       <input
@@ -44,7 +49,7 @@ export function DateFilter({ id, label, value, onChange, min, max }) {
         min={min}
         max={max}
         onChange={(event) => onChange(event.target.value)}
-        className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={nativeControlClass}
       />
     </div>
   )
