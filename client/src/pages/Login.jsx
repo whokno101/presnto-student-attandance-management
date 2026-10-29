@@ -35,7 +35,7 @@ const sampleSessions = (tick) => {
   const moved = tick >= 2
   return [
     { id: 'math110', time: '08:00', code: 'MATH 110', title: 'Calculus I', hall: 'A-101', status: { label: 'Closed · 94%', tone: 'ok' } },
-    { id: 'cs201', time: '09:00', code: 'CS 201', title: 'Data Structures', hall: 'B-214', status: { label: `Check-in · ${checkedIn}/${ROSTER}`, tone: 'live' } },
+    { id: 'cs201', time: '09:00', code: 'CS 201', title: 'Data Structures', hall: 'B-214', status: { label: 'Check-in', count: `${checkedIn}/${ROSTER}`, tone: 'live' } },
     { id: 'phy120', time: '10:30', code: 'PHY 120', title: 'Mechanics', hall: 'C-008', status: { label: 'Scheduled', tone: 'muted' } },
     {
       id: 'eng105',

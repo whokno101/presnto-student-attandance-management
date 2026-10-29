@@ -6,7 +6,7 @@ import EmptyState from '@/components/common/EmptyState'
 import FilterSelect, { DateFilter } from '@/components/common/FilterSelect'
 import PageHeader from '@/components/common/PageHeader'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -182,6 +182,15 @@ export default function Schedule() {
                 }}
                 disabled={{ before: today() }}
                 className="rounded-md border"
+                // Fill the fieldset: seven equal columns instead of the popover's fixed 32px cells.
+                classNames={{
+                  months: 'flex w-full',
+                  month: 'w-full space-y-4',
+                  head_row: 'grid grid-cols-7',
+                  head_cell: 'text-center text-[0.8rem] font-normal text-muted-foreground',
+                  row: 'mt-1 grid w-full grid-cols-7',
+                  day: cn(buttonVariants({ variant: 'ghost' }), 'h-9 w-full p-0 font-normal aria-selected:opacity-100'),
+                }}
               />
               <p className="text-xs text-muted-foreground" aria-live="polite">
                 {dates.length ? `${dates.length} date${dates.length === 1 ? '' : 's'} selected` : 'No individual dates selected'}

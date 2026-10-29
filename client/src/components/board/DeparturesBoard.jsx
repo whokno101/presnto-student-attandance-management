@@ -9,9 +9,11 @@ import { cn } from '@/lib/utils'
  * signal yellow and keeps a yellow chip until the data moves on, so a change
  * is never missed. Status is always a word; colour only reinforces it.
  *
- * rows: [{ id, day?, time, code, title, detail?, hall, status: { label, tone }, changed?: 'hall' | 'status', changedAt?,
+ * rows: [{ id, day?, time, code, title, detail?, hall, status: { label, count?, tone }, changed?: 'hall' | 'status', changedAt?,
  *          action?: { to, label } }]
  * tone: 'live' (signal chip) · 'ok' · 'alert' · 'muted' · 'default'
+ * count: a figure that follows the status word in plain tabular type (e.g. check-ins "104/140"),
+ *        so the chip itself stays one short word.
  * surface: 'shell' (ink ground: login, live views) or 'card' (inside the app)
  */
 const TONES = {
@@ -30,9 +32,14 @@ const TONES = {
 }
 
 /** The signal chip: the only yellow in the app, for live or changed state. */
-export function Signal({ children }) {
+export function Signal({ children, compact = false }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-sm bg-signal px-1.5 py-px font-display text-[0.9rem] font-bold uppercase tracking-[0.06em] text-signal-foreground">
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm bg-signal font-display font-bold uppercase text-signal-foreground',
+        compact ? 'px-1 py-px text-[0.78rem] leading-tight tracking-[0.08em]' : 'px-1.5 py-px text-[0.9rem] tracking-[0.06em]'
+      )}
+    >
       {children}
     </span>
   )
@@ -92,24 +99,31 @@ export default function DeparturesBoard({ rows, caption, surface = 'shell', clas
                   </span>
                 </td>
                 {showHall ? (
-                  <td className={cn('hidden pe-4 font-mono text-[0.95rem] sm:table-cell', dense ? 'py-2.5' : 'py-3.5', shell ? 'text-shell-foreground' : 'text-foreground')}>
-                    {row.changed === 'hall' ? <Signal>{row.hall}</Signal> : row.hall}
+                  <td className={cn('hidden whitespace-nowrap pe-4 font-mono text-[0.95rem] sm:table-cell', dense ? 'py-2.5' : 'py-3.5', shell ? 'text-shell-foreground' : 'text-foreground')}>
+                    {row.changed === 'hall' ? <Signal compact>{row.hall}</Signal> : row.hall}
                   </td>
                 ) : null}
-                <td className={cn(dense ? 'py-2.5' : 'py-3.5')}>
+                <td className={cn('whitespace-nowrap', dense ? 'py-2.5' : 'py-3.5')}>
                   <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
-                    <span className="flex flex-wrap items-center gap-1.5">
-                      {tone === 'live' || row.changed === 'status' ? (
-                        <Signal>{row.status.label}</Signal>
-                      ) : (
-                        <span className={cn('font-display text-[0.95rem] font-semibold uppercase tracking-[0.06em]', tones[tone] ?? tones.default)}>
-                          {row.status?.label}
-                        </span>
-                      )}
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                      <span className="inline-flex items-center gap-2">
+                        {tone === 'live' || row.changed === 'status' ? (
+                          <Signal compact>{row.status.label}</Signal>
+                        ) : (
+                          <span className={cn('font-display text-[0.95rem] font-semibold uppercase tracking-[0.06em]', tones[tone] ?? tones.default)}>
+                            {row.status?.label}
+                          </span>
+                        )}
+                        {row.status?.count ? (
+                          <span className={cn('font-mono text-[0.85rem]', shell ? 'text-shell-foreground' : 'text-foreground')}>
+                            {row.status.count}
+                          </span>
+                        ) : null}
+                      </span>
                       {/* The Hall column drops on phones; a changed hall must still show. */}
                       {row.changed === 'hall' ? (
                         <span className="sm:hidden">
-                          <Signal>Hall {row.hall}</Signal>
+                          <Signal compact>Hall {row.hall}</Signal>
                         </span>
                       ) : null}
                     </span>
