@@ -15,6 +15,7 @@
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
+const { disconnectDB } = require('./config/db');
 const { User, Faculty, Student, Class, Attendance } = require('./models');
 
 const SALT_ROUNDS = 12;
@@ -433,12 +434,12 @@ const seedDatabase = async () => {
   console.log('  faculty1@university.edu  (faculty)');
   console.log('  student1@university.edu  (student)');
 
-  await mongoose.connection.close();
+  await disconnectDB();
   process.exit(0);
 };
 
 seedDatabase().catch(async (err) => {
   console.error('Seed failed:', err);
-  await mongoose.connection.close().catch(() => {});
+  await disconnectDB().catch(() => {});
   process.exit(1);
 });

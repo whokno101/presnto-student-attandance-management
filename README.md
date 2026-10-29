@@ -13,7 +13,7 @@ Role-based attendance tracking for a university, built as a single repository wi
 ```
 university-attendance-system/
 ├── client/                         # Vite + React SPA
-│   ├── vite.config.js              # '@' -> src alias, /api proxy to :5000
+│   ├── vite.config.js              # '@' -> src alias, /api proxy to :5001
 │   └── src/
 │       ├── App.jsx                 # routes + role guards
 │       ├── components/
@@ -75,12 +75,12 @@ cp .env.example .env
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `PORT` | Express listening port | `5000` |
-| `MONGO_URI` | MongoDB connection string | `mongodb://127.0.0.1:27017/university-attendance` |
+| `PORT` | Express listening port (not 5000: macOS AirPlay owns it) | `5001` |
+| `MONGO_URI` | MongoDB connection string, or `memory` for a local dev database | `mongodb://127.0.0.1:27017/university-attendance` |
 | `JWT_SECRET` | Secret used to sign JWTs | *(must be overridden in production)* |
 | `JWT_EXPIRES_IN` | Token lifetime | `7d` |
 | `CLIENT_URL` | Origin allowed by CORS | `http://localhost:5173` |
-| `VITE_API_URL` | Base API URL used by the client | `/api` (Vite proxies to `:5000`) |
+| `VITE_API_URL` | Base API URL used by the client | `/api` (Vite proxies to `:5001`) |
 
 > Set a long random value for `JWT_SECRET` before deploying.
 > The server reads the **root** `.env` first, then `server/.env`; every value has a
@@ -107,11 +107,15 @@ Use `--no-reset` (`node seed.js --no-reset`) to add data without clearing existi
 ### 5. Run
 
 ```bash
-npm run dev:server   # http://localhost:5000  (health check: /health)
+npm run dev:server   # http://localhost:5001  (health check: /health)
 npm run dev:client   # http://localhost:5173
 ```
 
-No MongoDB installed? Run a portable binary against a project-local folder — no
+No MongoDB installed? Set `MONGO_URI=memory` in `.env`: the server (and the seed
+script) start a local mongod via `mongodb-memory-server`, storing data in
+`server/.data/memory-db` so it survives restarts. Run `npm run seed` once first.
+
+Alternatively, run a portable binary against a project-local folder — no
 installer or admin rights required:
 
 ```bash
