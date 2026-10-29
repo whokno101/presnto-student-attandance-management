@@ -9,7 +9,7 @@ const timeFormat = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute:
  * The board's clock: today's date and the current time in tabular figures.
  * Ticks once a minute, aligned to the minute boundary.
  */
-export default function BoardClock({ className, showDay = true }) {
+export default function BoardClock({ className, showDay = true, showTime = true }) {
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
@@ -27,8 +27,9 @@ export default function BoardClock({ className, showDay = true }) {
 
   return (
     <time dateTime={now.toISOString()} className={cn('font-mono text-xs tabular-nums', className)}>
-      {showDay ? `${dayFormat.format(now)} · ` : null}
-      {timeFormat.format(now)}
+      {showDay ? dayFormat.format(now) : null}
+      {showDay && showTime ? ' · ' : null}
+      {showTime ? timeFormat.format(now) : null}
     </time>
   )
 }

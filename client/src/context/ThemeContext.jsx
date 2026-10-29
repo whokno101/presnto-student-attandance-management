@@ -40,6 +40,8 @@ export function ThemeProvider({ children }) {
   // setTheme returns (ThemeToggle's view transition snapshots end after).
   useLayoutEffect(() => {
     document.documentElement.classList.toggle('dark', resolvedTheme === 'dark')
+    // Browser chrome (mobile address bar) matches the page ground.
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', resolvedTheme === 'dark' ? '#0b0d10' : '#ffffff')
   }, [resolvedTheme])
 
   const setTheme = useCallback((next) => {

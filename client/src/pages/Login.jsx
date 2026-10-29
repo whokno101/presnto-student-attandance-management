@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { ArrowRight, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff, Loader2, Plane } from 'lucide-react'
 
-import Logo from '@/components/common/Logo'
+import Logo, { PRODUCT_NAME } from '@/components/common/Logo'
 import BoardClock from '@/components/common/BoardClock'
 import DeparturesBoard from '@/components/board/DeparturesBoard'
-import { Pass, PassPerforation } from '@/components/board/Pass'
+import { Pass, PassBarcode, PassField, PassPerforation } from '@/components/board/Pass'
 import ThemeToggle from '@/components/common/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,12 +14,13 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/context/AuthContext'
 import { getErrorCode, getErrorMessage } from '@/lib/api'
 import { homeFor } from '@/lib/navigation'
-import { prefersReducedMotion } from '@/lib/utils'
+import { cn, prefersReducedMotion } from '@/lib/utils'
 
+// `code` and `home` print the destination on the pass once a demo account is filled.
 const DEMO_ACCOUNTS = [
-  { role: 'Admin', email: 'admin@university.edu' },
-  { role: 'Faculty', email: 'faculty1@university.edu' },
-  { role: 'Student', email: 'student1@university.edu' },
+  { role: 'Admin', email: 'admin@university.edu', code: 'ADM', home: 'Admin home' },
+  { role: 'Faculty', email: 'faculty1@university.edu', code: 'FAC', home: 'Faculty home' },
+  { role: 'Student', email: 'student1@university.edu', code: 'STU', home: 'Student home' },
 ]
 
 const ROSTER = 140
@@ -169,6 +170,10 @@ export default function Login() {
     setErrors({})
   }
 
+  const destination = DEMO_ACCOUNTS.find((account) => account.email === form.email.trim().toLowerCase())
+  const passenger = form.email.trim().split('@')[0].toUpperCase()
+
+  const passCaption = 'font-display text-[0.75rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground'
   const fieldLabel = 'mb-1.5 block font-display text-[0.8rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground'
 
   return (
@@ -196,20 +201,65 @@ export default function Login() {
         <section className="order-1 lg:order-2" aria-labelledby="signin-title">
           <Logo inverse size={32} subtitle="Attendance" className="mb-6 lg:hidden" />
 
-          <Pass className="shadow-[0_32px_80px_-32px_rgb(0_0_0/0.75)]">
-            <div className="flex items-start justify-between gap-4 px-6 pb-5 pt-6">
-              <div>
-                <h1 id="signin-title" className="font-display text-[2rem] font-bold uppercase leading-none tracking-[0.03em]">
-                  Sign in
-                </h1>
-                <p className="mt-2 text-[0.95rem] text-muted-foreground">Use your university account.</p>
+          <Pass className="shadow-[0_32px_80px_-32px_hsl(var(--scrim)/0.35)] dark:shadow-[0_32px_80px_-32px_rgb(0_0_0/0.75)]">
+            <div className="flex items-center justify-between gap-4 bg-primary px-6 py-3.5 text-primary-foreground">
+              <span className="font-display text-lg font-bold uppercase leading-none tracking-[0.08em]">{PRODUCT_NAME}</span>
+              <span className="font-display text-[0.8rem] font-semibold uppercase tracking-[0.14em]">Boarding pass</span>
+            </div>
+
+            {/* The ticket face restates the form (route, passenger); the form itself is the accessible source. */}
+            <div className="px-6 pb-5 pt-5" aria-hidden="true">
+              <div className="flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <p className={passCaption}>From</p>
+                  <p className="font-mono text-[2.5rem] font-semibold leading-none tracking-[-0.02em]">LGN</p>
+                </div>
+                <div className="mb-3 flex min-w-0 flex-1 items-center gap-2 text-muted-foreground">
+                  <span className="h-0 flex-1 border-t-2 border-dotted border-current" />
+                  <Plane className="h-5 w-5 shrink-0 text-foreground rtl:-scale-x-100" />
+                  <span className="h-0 flex-1 border-t-2 border-dotted border-current" />
+                </div>
+                <div className="min-w-0 text-end">
+                  <p className={passCaption}>To</p>
+                  <p
+                    key={destination?.code ?? 'none'}
+                    className={cn(
+                      'rounded-sm font-mono text-[2.5rem] font-semibold leading-none tracking-[-0.02em]',
+                      destination ? 'animate-signal-in' : 'text-muted-foreground'
+                    )}
+                  >
+                    {destination?.code ?? '···'}
+                  </p>
+                </div>
               </div>
-              <BoardClock showDay={false} className="pt-1 text-muted-foreground" />
+              <div className="mt-1.5 flex justify-between gap-3 text-sm text-muted-foreground">
+                <span>Sign in</span>
+                <span className="truncate">{destination?.home ?? 'Your home'}</span>
+              </div>
+
+              <div className="mt-5 grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-6 border-t pt-4">
+                <PassField label="Date">
+                  <BoardClock showTime={false} className="text-[0.95rem]" />
+                </PassField>
+                <PassField label="Time">
+                  <BoardClock showDay={false} className="text-[0.95rem]" />
+                </PassField>
+                <PassField label="Passenger" className="text-end">
+                  {passenger || '—'}
+                </PassField>
+              </div>
             </div>
 
             <PassPerforation ground="bg-shell" />
 
             <form onSubmit={handleSubmit} noValidate className="space-y-4 px-6 pb-6 pt-5">
+              <div>
+                <h1 id="signin-title" className="font-display text-[1.75rem] font-bold uppercase leading-none tracking-[0.03em]">
+                  Sign in
+                </h1>
+                <p className="mt-1.5 text-[0.95rem] text-muted-foreground">Use your university account.</p>
+              </div>
+
               <div>
                 <Label htmlFor="email" className={fieldLabel}>
                   Email
@@ -291,6 +341,7 @@ export default function Login() {
                   </button>
                 ))}
               </div>
+              <PassBarcode value={form.email.trim().toLowerCase() || PRODUCT_NAME} className="mt-5 text-foreground" />
             </div>
           </Pass>
         </section>
