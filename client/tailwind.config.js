@@ -51,6 +51,10 @@ export default {
           DEFAULT: 'hsl(var(--signal))',
           foreground: 'hsl(var(--signal-foreground))',
         },
+        topbar: {
+          DEFAULT: 'hsl(var(--topbar))',
+          border: 'hsl(var(--topbar-border))',
+        },
         shell: {
           DEFAULT: 'hsl(var(--shell))',
           foreground: 'hsl(var(--shell-foreground))',

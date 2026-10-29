@@ -40,7 +40,9 @@ colors:
   primary-dark: "hsl(60 9% 95%)"
   primary-foreground-dark: "hsl(216 19% 5%)"
   primary-hover-dark: "hsl(60 5% 80%)"
-  shell-dark: "hsl(216 22% 3%)"
+  shell-dark: "hsl(216 19% 5%)"
+  topbar: "hsl(0 0% 100%)"
+  topbar-dark: "hsl(216 19% 5%)"
   success-dark: "hsl(145 55% 52%)"
   warning-dark: "hsl(30 95% 60%)"
   destructive-dark: "hsl(0 80% 67%)"
@@ -258,7 +260,7 @@ A near-black ink and cool steel neutral system with a single saturated signal ye
 
 ## Layout
 
-The app is a fixed ink sidebar (256px) beside a content plane capped at 1600px, padded 16px / 24px / 32px at base / sm / lg. Below lg (1024px) the sidebar becomes an ink drawer from the start edge and the top bar shows the page title and clock. The 64px top bar is white (card) with a hairline under it.
+The app is a fixed ink sidebar (256px) beside a content plane capped at 1600px, padded 16px / 24px / 32px at base / sm / lg. Below lg (1024px) the sidebar becomes an ink drawer from the start edge and the top bar shows the page title and clock. The 64px top bar is white with a hairline under it on light; on dark it takes the shell tone, so sidebar, top bar and page ground read as one ink plane and only cards lift.
 
 Content is composed as ruled lists, not tiles. The board and class lists are tables with a hairline under every row (row padding 14px, 10px dense; class rows 12px x 16px). Summary figures sit in a single bordered strip divided by hairlines (cells 16px x 20px, auto-fit at 9rem minimum, two columns on phones). Dashboard home pairs a 2:1 board-and-actions grid at xl.
 
@@ -315,7 +317,7 @@ Condensed capitals on flat fills; they press down 1px when clicked.
 ### Navigation
 - **Sidebar:** ink shell, 256px. The header holds the logo with an "Attendance" subtitle, then the role in condensed capitals over the board clock, each band closed by a shell hairline.
 - **Items:** condensed capitals at 0.98rem, steel text, 4px corners, 8px x 12px padding, a 16px lucide icon. Hover: board slate fill and panel-white text. **Active:** a solid panel-white panel with ink text, a ticket pulled from the board. Never yellow.
-- **Top bar:** 64px white bar with theme toggle, notifications, name and email, an initials block in ink, and an outline Sign out.
+- **Top bar:** 64px bar (white on light, shell ink on dark) with theme toggle, notifications, name and email, an initials block in ink, and an outline Sign out.
 - **Tabs:** condensed capitals over a hairline; the active tab takes a 2px foreground underline.
 
 ### Departures Board (signature)

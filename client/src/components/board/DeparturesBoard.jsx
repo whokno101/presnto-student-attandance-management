@@ -55,10 +55,10 @@ export default function DeparturesBoard({ rows, caption, surface = 'shell', clas
               shell ? 'border-shell-border text-shell-muted' : 'border-border text-muted-foreground'
             )}
           >
-            <th scope="col" className="w-[5.5rem] py-2 pe-4 text-start font-semibold">Time</th>
+            <th scope="col" className="w-[5.5rem] whitespace-nowrap py-2 pe-4 text-start font-semibold">Time</th>
             <th scope="col" className="py-2 pe-4 text-start font-semibold">Course</th>
             {showHall ? <th scope="col" className="hidden py-2 pe-4 text-start font-semibold sm:table-cell">Hall</th> : null}
-            <th scope="col" className="py-2 text-start font-semibold">Status</th>
+            <th scope="col" className="whitespace-nowrap py-2 text-start font-semibold">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -76,17 +76,17 @@ export default function DeparturesBoard({ rows, caption, surface = 'shell', clas
               >
                 <td className={cn('pe-4 font-mono font-medium', dense ? 'py-2.5 text-base' : 'py-3.5 text-lg', shell ? 'text-shell-foreground' : 'text-foreground')}>
                   {row.day ? (
-                    <span className={cn('block font-display text-[0.75rem] font-semibold uppercase tracking-[0.1em]', shell ? 'text-shell-muted' : 'text-muted-foreground')}>
+                    <span className={cn('block whitespace-nowrap font-display text-[0.75rem] font-semibold uppercase tracking-[0.1em]', shell ? 'text-shell-muted' : 'text-muted-foreground')}>
                       {row.day}
                     </span>
                   ) : null}
                   <time>{row.time}</time>
                 </td>
-                <td className={cn('pe-4', dense ? 'py-2.5' : 'py-3.5')}>
+                <td className={cn('w-full max-w-0 pe-4', dense ? 'py-2.5' : 'py-3.5')}>
                   <span className={cn('block font-mono text-[0.95rem] font-medium', shell ? 'text-shell-foreground' : 'text-foreground')}>
                     {row.code}
                   </span>
-                  <span className={cn('block truncate text-sm', shell ? 'text-shell-muted' : 'text-muted-foreground')}>
+                  <span className={cn('block break-words text-sm sm:truncate', shell ? 'text-shell-muted' : 'text-muted-foreground')}>
                     {row.title}
                     {row.detail ? ` · ${row.detail}` : null}
                   </span>

@@ -32,7 +32,7 @@ export default function AppLayout() {
         Skip to main content
       </a>
 
-      <aside className="hidden w-64 shrink-0 bg-shell lg:block">
+      <aside className="hidden w-64 shrink-0 border-e border-shell-border bg-shell lg:block">
         <div className="sticky top-0 h-screen">
           <Sidebar />
         </div>
