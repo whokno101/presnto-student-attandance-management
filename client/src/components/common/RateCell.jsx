@@ -7,6 +7,17 @@ import { cn } from '@/lib/utils'
  * Optional `attended` / `marked` add a title with the raw counts.
  */
 export default function RateCell({ rate = 0, attended, marked, className }) {
+  // Nothing marked yet means there is no rate — not a 0% "at risk" rate.
+  if (marked === 0) {
+    return (
+      <div className={cn('flex items-center gap-3', className)}>
+        <Badge variant="secondary" className="w-16 shrink-0 justify-center text-muted-foreground">
+          No data
+        </Badge>
+      </div>
+    )
+  }
+
   const tone = percentTone(rate)
   const safeRate = Math.min(100, Math.max(0, rate))
 

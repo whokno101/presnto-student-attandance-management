@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertCircle, CheckCheck, Loader2, Save, Users } from 'lucide-react'
 
 import DatePicker from '@/components/common/DatePicker'
@@ -35,6 +35,8 @@ export default function MarkAttendance() {
   const [loadingSheet, setLoadingSheet] = useState(false)
   const [sheetError, setSheetError] = useState(null)
   const [saving, setSaving] = useState(false)
+  // Switching class/date quickly must not let a slower, older response win.
+  const sheetRequest = useRef(0)
 
   const day = useMemo(() => toYmd(date), [date])
   const selectedClass = classes.find((item) => item.id === classId) || null
@@ -77,6 +79,9 @@ export default function MarkAttendance() {
 
   const loadSheet = useCallback(
     async (targetClassId, targetDay) => {
+      const request = sheetRequest.current + 1
+      sheetRequest.current = request
+
       if (!targetClassId) {
         setSheet(null)
         return
@@ -86,15 +91,17 @@ export default function MarkAttendance() {
       setSheetError(null)
       try {
         const data = await getClassAttendance(targetClassId, targetDay)
+        if (sheetRequest.current !== request) return
         setSheet(data)
         setMarks(
           Object.fromEntries(data.students.map((student) => [student.id, student.status || DEFAULT_STATUS]))
         )
       } catch (error) {
+        if (sheetRequest.current !== request) return
         setSheet(null)
         setSheetError(error)
       } finally {
-        setLoadingSheet(false)
+        if (sheetRequest.current === request) setLoadingSheet(false)
       }
     },
     []

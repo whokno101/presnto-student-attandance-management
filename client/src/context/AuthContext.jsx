@@ -40,9 +40,12 @@ export function AuthProvider({ children }) {
         setUser(data.user)
         setStoredUser(data.user)
       })
-      .catch(() => {
-        // The axios interceptor already redirects on 401; just drop local state.
+      .catch((error) => {
+        // Only a rejected token ends the session (the axios interceptor already
+        // redirects on 401). A network error or 5xx while the API restarts must
+        // not sign everyone out — keep the stored user and carry on.
         if (cancelled || !mounted.current) return
+        if (error.response?.status !== 401) return
         clearSession()
         setTokenState(null)
         setUser(null)

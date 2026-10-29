@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import useFormState from '@/hooks/useFormState'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/api'
-import { DAYS, DAY_ABBR, DEPARTMENTS, SEMESTERS } from '@/lib/constants'
+import { DAYS, DAY_ABBR, DEPARTMENTS, SEMESTERS, withCurrent } from '@/lib/constants'
 import { createClass, updateClass } from '@/services/classes'
 
 const CODE_RE = /^[A-Za-z0-9-]{3,15}$/
@@ -152,7 +152,7 @@ export default function ClassForm({ open, onOpenChange, classDoc, onSaved }) {
             <SelectValue placeholder="Select department" />
           </SelectTrigger>
           <SelectContent>
-            {DEPARTMENTS.map((department) => (
+            {withCurrent(DEPARTMENTS, classDoc?.department).map((department) => (
               <SelectItem key={department} value={department}>
                 {department}
               </SelectItem>
@@ -175,7 +175,7 @@ export default function ClassForm({ open, onOpenChange, classDoc, onSaved }) {
             <SelectValue placeholder="Select semester" />
           </SelectTrigger>
           <SelectContent>
-            {SEMESTERS.map((semester) => (
+            {withCurrent(SEMESTERS, classDoc?.semester).map((semester) => (
               <SelectItem key={semester} value={semester}>
                 {semester}
               </SelectItem>

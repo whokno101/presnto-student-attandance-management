@@ -16,6 +16,7 @@ const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const { disconnectDB } = require('./config/db');
+const { todayInInstitution } = require('./utils/dates');
 const { User, Faculty, Student, Class, Attendance } = require('./models');
 
 const SALT_ROUNDS = 12;
@@ -119,7 +120,7 @@ const shuffle = (items, rng) => {
 /** `today` as a weekday name, e.g. 'Monday' — resolved at seed time. */
 const todayWeekday = () => {
   const names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return names[new Date().getDay()];
+  return names[todayInInstitution().getUTCDay()];
 };
 
 /**
@@ -152,7 +153,7 @@ const ensureTodayHasClasses = (slots, weekday, minimum = 2) => {
  */
 const classDates = (day) => {
   const target = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].indexOf(day);
-  const today = utcDay(new Date());
+  const today = todayInInstitution();
   const backToDay = (today.getUTCDay() - target + 7) % 7;
   const mostRecent = today.getTime() - backToDay * DAY_MS;
 

@@ -21,6 +21,14 @@ export const DAY_ABBR = {
   Sunday: 'Sun',
 }
 
+/**
+ * Select options plus the record's current value when it is not one of them
+ * (a past semester, a department added outside this list), so editing an
+ * older record never blanks a required field.
+ */
+export const withCurrent = (options, current) =>
+  current && !options.includes(current) ? [current, ...options] : options
+
 export const PAGE_SIZES = [10, 25, 50]
 
 export const DEFAULT_PAGE_SIZE = 10

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import useFormState from '@/hooks/useFormState'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/api'
-import { DEPARTMENTS } from '@/lib/constants'
+import { DEPARTMENTS, withCurrent } from '@/lib/constants'
 import { createFaculty, updateFaculty } from '@/services/faculty'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -161,7 +161,7 @@ export default function FacultyForm({ open, onOpenChange, faculty, onSaved }) {
             <SelectValue placeholder="Select department" />
           </SelectTrigger>
           <SelectContent>
-            {DEPARTMENTS.map((department) => (
+            {withCurrent(DEPARTMENTS, faculty?.department).map((department) => (
               <SelectItem key={department} value={department}>
                 {department}
               </SelectItem>

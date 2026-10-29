@@ -80,6 +80,7 @@ cp .env.example .env
 | `JWT_SECRET` | Secret used to sign JWTs | *(must be overridden in production)* |
 | `JWT_EXPIRES_IN` | Token lifetime | `7d` |
 | `CLIENT_URL` | Origin allowed by CORS | `http://localhost:5173` |
+| `INSTITUTION_TIME_ZONE` | IANA zone that defines "today" for attendance (e.g. `Africa/Casablanca`) | the server machine's zone |
 | `VITE_API_URL` | Base API URL used by the client | `/api` (Vite proxies to `:5001`) |
 
 > Set a long random value for `JWT_SECRET` before deploying.
@@ -93,14 +94,14 @@ cp .env.example .env
 npm run seed
 ```
 
-Creates: **1 admin, 2 faculty, 5 students, 2 classes** and ~15 weeks of attendance records per class.
+Creates: **1 admin, 10 faculty, 100 students, 10 classes** (each student in 3 classes) and 12 weeks of attendance per class.
 All seeded accounts share the password `Password@123`.
 
 | Role | Email |
 | --- | --- |
 | Admin | `admin@university.edu` |
-| Faculty | `faculty1@university.edu`, `faculty2@university.edu` |
-| Student | `student1@university.edu` … `student5@university.edu` |
+| Faculty | `faculty1@university.edu` … `faculty10@university.edu` |
+| Student | `student1@university.edu` … `student100@university.edu` |
 
 Use `--no-reset` (`node seed.js --no-reset`) to add data without clearing existing collections.
 
@@ -124,6 +125,12 @@ mongod --dbpath .data/mongo --port 27017 --bind_ip 127.0.0.1
 ```
 
 `.data/` is git-ignored, so the database survives restarts without polluting the repo.
+
+### 6. Test
+
+```bash
+npm test --workspace=server   # API tests against an in-memory MongoDB
+```
 
 ---
 

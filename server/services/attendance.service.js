@@ -14,19 +14,27 @@ const Student = require('../models/Student');
 const { ApiError } = require('../utils/apiError');
 const { requireStudentProfile } = require('./access.service');
 const { parsePagination, buildPagination, escapeRegex } = require('../utils/query');
+const { todayInInstitution } = require('../utils/dates');
 
 const STATUSES = Attendance.STATUSES;
 
-/** Accepts `YYYY-MM-DD` (or a Date) and returns UTC midnight. */
+/**
+ * Accepts `YYYY-MM-DD` (or a Date) and returns UTC midnight. No value means
+ * today in the institution's time zone.
+ */
 const normalizeDay = (value) => {
   if (value === undefined || value === null || value === '') {
-    return Attendance.normalizeDate(new Date());
+    return todayInInstitution();
   }
 
   const raw = value instanceof Date ? value : String(value);
-  const parsed = new Date(raw.length === 10 ? `${raw}T00:00:00.000Z` : raw);
+  const isDayString = typeof raw === 'string' && raw.length === 10;
+  const parsed = new Date(isDayString ? `${raw}T00:00:00.000Z` : raw);
 
-  if (Number.isNaN(parsed.getTime())) {
+  // `new Date('2026-02-31')` rolls over to March 3rd; reject it instead.
+  const rolledOver = isDayString && !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) !== raw;
+
+  if (Number.isNaN(parsed.getTime()) || rolledOver) {
     throw ApiError.validation('Enter a valid date', [
       { field: 'date', message: 'Use the YYYY-MM-DD format' },
     ]);
@@ -58,7 +66,7 @@ const summarise = (records) => {
  */
 const mark = async ({ classDoc, date, records, actor }) => {
   const day = normalizeDay(date);
-  const today = Attendance.normalizeDate(new Date());
+  const today = todayInInstitution();
 
   if (day.getTime() > today.getTime()) {
     throw ApiError.validation('Attendance cannot be marked for a future date', [
@@ -263,23 +271,35 @@ const OVERALL_PIPELINE = [
   { $project: { _id: 0, marked: 1, attended: 1, rate: 1 } },
 ];
 
+/**
+ * Rows come from Class (so a class nobody has marked yet still appears) with
+ * the attendance tallies folded in by a correlated `$lookup`.
+ */
 const BY_CLASS_PIPELINE = [
-  { $group: { _id: '$class', marked: { $sum: 1 }, attended: ATTENDED_EXPR } },
-  { $lookup: { from: 'classes', localField: '_id', foreignField: '_id', as: 'cls' } },
-  { $unwind: { path: '$cls', preserveNullAndEmptyArrays: true } },
-  { $lookup: { from: 'faculties', localField: 'cls.faculty', foreignField: '_id', as: 'owner' } },
+  {
+    $lookup: {
+      from: 'attendances',
+      let: { cid: '$_id' },
+      pipeline: [
+        { $match: { $expr: { $eq: ['$class', '$$cid'] } } },
+        { $group: { _id: null, marked: { $sum: 1 }, attended: ATTENDED_EXPR } },
+      ],
+      as: 'tally',
+    },
+  },
+  { $lookup: { from: 'faculties', localField: 'faculty', foreignField: '_id', as: 'owner' } },
   { $unwind: { path: '$owner', preserveNullAndEmptyArrays: true } },
   { $lookup: { from: 'users', localField: 'owner.user', foreignField: '_id', as: 'ownerUser' } },
   { $unwind: { path: '$ownerUser', preserveNullAndEmptyArrays: true } },
   {
     $set: {
-      code: { $ifNull: ['$cls.code', '—'] },
-      name: { $ifNull: ['$cls.name', 'Removed class'] },
       faculty: { $ifNull: ['$ownerUser.name', 'Unassigned'] },
-      students: { $size: { $ifNull: ['$cls.students', []] } },
-      rate: RATE_EXPR,
+      students: { $size: { $ifNull: ['$students', []] } },
+      marked: { $ifNull: [{ $arrayElemAt: ['$tally.marked', 0] }, 0] },
+      attended: { $ifNull: [{ $arrayElemAt: ['$tally.attended', 0] }, 0] },
     },
   },
+  { $set: { rate: RATE_EXPR } },
   {
     $project: {
       _id: 0,
@@ -357,18 +377,20 @@ const byStudentPipeline = ({ search, sortField, sortDir, skip, limit }) => [
       ],
       meta: [{ $count: 'total' }],
       // Colour-rule counts (>= 90 green / 75-89 amber / < 75 red) for the same
-      // filtered set the table pages through.
+      // filtered set the table pages through. A student with nothing marked has
+      // no rate at all: they are counted as `noData`, never as at risk.
       bands: [
         {
           $group: {
             _id: null,
             total: { $sum: 1 },
+            noData: { $sum: { $cond: [{ $eq: ['$marked', 0] }, 1, 0] } },
             green: { $sum: { $cond: [{ $gte: ['$rate', 90] }, 1, 0] } },
             amber: { $sum: { $cond: [{ $and: [{ $gte: ['$rate', 75] }, { $lt: ['$rate', 90] }] }, 1, 0] } },
-            red: { $sum: { $cond: [{ $lt: ['$rate', 75] }, 1, 0] } },
+            red: { $sum: { $cond: [{ $and: [{ $gt: ['$marked', 0] }, { $lt: ['$rate', 75] }] }, 1, 0] } },
           },
         },
-        { $project: { _id: 0, total: 1, green: 1, amber: 1, red: 1 } },
+        { $project: { _id: 0, total: 1, noData: 1, green: 1, amber: 1, red: 1 } },
       ],
     },
   },
@@ -390,7 +412,7 @@ const overview = async (query = {}) => {
 
   const [overallRows, byClass, studentFacet] = await Promise.all([
     Attendance.aggregate(OVERALL_PIPELINE),
-    Attendance.aggregate(BY_CLASS_PIPELINE),
+    Class.aggregate(BY_CLASS_PIPELINE),
     Student.aggregate(byStudentPipeline({ search, sortField: sort.field, sortDir, skip, limit })),
   ]);
 
@@ -402,7 +424,7 @@ const overview = async (query = {}) => {
       overall: overallRows[0] ?? { marked: 0, attended: 0, rate: 0 },
       byClass,
       byStudent: facet.rows,
-      bands: facet.bands[0] ?? { total, green: 0, amber: 0, red: 0 },
+      bands: facet.bands[0] ?? { total, noData: 0, green: 0, amber: 0, red: 0 },
     },
     pagination: buildPagination({ page, limit, total }),
   };
@@ -413,7 +435,7 @@ const overview = async (query = {}) => {
  * Returns null when nothing has been marked yet — an em dash beats a fake 0%.
  */
 const todayRate = async () => {
-  const today = Attendance.normalizeDate(new Date());
+  const today = todayInInstitution();
   const rows = await Attendance.find({ date: today }).select('status').lean();
 
   if (rows.length === 0) return null;

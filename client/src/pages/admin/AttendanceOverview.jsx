@@ -122,7 +122,7 @@ export default function AttendanceOverview() {
   }
 
   const overall = overview?.overall
-  const bands = overview?.bands ?? { total: 0, green: 0, amber: 0, red: 0 }
+  const bands = overview?.bands ?? { total: 0, noData: 0, green: 0, amber: 0, red: 0 }
   const classes = overview?.byClass ?? []
   const students = overview?.byStudent ?? []
   const tone = percentTone(overall?.rate ?? 0)
@@ -148,7 +148,7 @@ export default function AttendanceOverview() {
       icon: BookOpen,
       label: 'Classes',
       value: classes.length,
-      hint: `${classes.filter((c) => c.rate >= 90).length} above 90%`,
+      hint: `${classes.filter((c) => c.marked > 0 && c.rate >= 90).length} above 90%`,
       accent: 'border-t-emerald-500',
       iconClass: 'bg-emerald-500/10 text-emerald-600',
     },
@@ -256,7 +256,8 @@ export default function AttendanceOverview() {
         <CardHeader>
           <CardTitle className="text-base">By Student</CardTitle>
           <CardDescription>
-            {bands.green} on track · {bands.amber} watch · {bands.red} at risk (of {bands.total} matching)
+            {bands.green} on track · {bands.amber} watch · {bands.red} at risk
+            {bands.noData ? ` · ${bands.noData} not marked yet` : ''} (of {bands.total} matching)
           </CardDescription>
         </CardHeader>
 
