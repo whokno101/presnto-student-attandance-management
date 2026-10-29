@@ -4,17 +4,17 @@ export const STATUS_META = {
   present: {
     label: 'Present',
     variant: 'success',
-    active: 'bg-emerald-600 text-white shadow-sm',
+    active: 'bg-success text-success-foreground shadow-sm',
   },
   late: {
     label: 'Late',
     variant: 'warning',
-    active: 'bg-amber-500 text-white shadow-sm',
+    active: 'bg-warning text-warning-foreground shadow-sm',
   },
   absent: {
     label: 'Absent',
     variant: 'destructive',
-    active: 'bg-rose-600 text-white shadow-sm',
+    active: 'bg-destructive text-destructive-foreground shadow-sm',
   },
 }
 
@@ -57,17 +57,17 @@ export const percentTone = (percentage) => {
 }
 
 export const TONE_TEXT = {
-  strong: 'text-emerald-600',
-  fair: 'text-amber-600',
-  low: 'text-rose-600',
+  strong: 'text-success',
+  fair: 'text-warning',
+  low: 'text-destructive',
 }
 
 export const TONE_BADGE = { strong: 'success', fair: 'warning', low: 'destructive' }
 
 export const TONE_BAR = {
-  strong: 'bg-emerald-600',
-  fair: 'bg-amber-500',
-  low: 'bg-rose-600',
+  strong: 'bg-success',
+  fair: 'bg-warning',
+  low: 'bg-destructive',
 }
 
 export const TONE_LABEL = { strong: 'On track', fair: 'Watch', low: 'At risk' }

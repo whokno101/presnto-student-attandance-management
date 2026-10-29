@@ -289,7 +289,7 @@ export default function MarkAttendance() {
                               aria-label={`${STATUS_META[status].label} for ${student.name}`}
                               onClick={() => setStatus(student.id, status)}
                               className={cn(
-                                'rounded px-2.5 py-1 text-xs font-medium transition-colors',
+                                'rounded px-2.5 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
                                 active
                                   ? STATUS_META[status].active
                                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'

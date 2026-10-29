@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
-import { Eye, EyeOff, GraduationCap, Loader2, Lock, Mail } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
+import Logo from '@/components/common/Logo'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -120,19 +120,14 @@ export default function Login() {
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4 sm:p-6">
       <div className="grid w-full max-w-4xl overflow-hidden rounded-2xl border bg-card shadow-lg md:grid-cols-2">
         <div className="hidden flex-col justify-between bg-primary p-8 text-primary-foreground md:flex">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary-foreground/15">
-              <GraduationCap className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <span className="text-sm font-semibold">UniTrack</span>
-          </div>
+          <Logo inverse subtitle="Attendance System" />
           <div className="space-y-3">
             <h2 className="text-2xl font-semibold leading-tight">Attendance, without the paperwork.</h2>
-            <p className="text-sm text-primary-foreground/80">
+            <p className="text-sm">
               One place for administrators, faculty and students to manage classes, rosters and daily attendance.
             </p>
           </div>
-          <ul className="space-y-2 text-sm text-primary-foreground/80">
+          <ul className="space-y-2 text-sm">
             <li>Role-based access for admins, faculty and students</li>
             <li>Mark and review attendance in seconds</li>
             <li>Live per-class attendance percentages</li>
@@ -142,9 +137,7 @@ export default function Login() {
         <div className="p-6 sm:p-8">
           <Card className="border-0 shadow-none">
             <CardHeader className="px-0 pt-0">
-              <div className="mb-2 flex items-center justify-between md:hidden">
-                <Badge variant="secondary">UniTrack</Badge>
-              </div>
+              <Logo className="mb-4 md:hidden" subtitle="Attendance System" />
               <CardTitle className="text-2xl">Sign in</CardTitle>
               <CardDescription>Use your university account to continue.</CardDescription>
             </CardHeader>

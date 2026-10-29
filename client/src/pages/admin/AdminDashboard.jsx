@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, BookOpen, ClipboardCheck, GraduationCap, Users } from 'lucide-react'
 
+import StatCard from '@/components/common/StatCard'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/api'
-import { cn } from '@/lib/utils'
 import { getAdminStats } from '@/services/dashboard'
 
 const STAT_CARDS = [
@@ -13,29 +13,25 @@ const STAT_CARDS = [
     key: 'students',
     label: 'Total Students',
     icon: Users,
-    accent: 'border-t-blue-500',
-    iconClass: 'bg-blue-500/10 text-blue-600',
+    tone: 1,
   },
   {
     key: 'faculty',
     label: 'Total Faculty',
     icon: GraduationCap,
-    accent: 'border-t-orange-500',
-    iconClass: 'bg-orange-500/10 text-orange-600',
+    tone: 2,
   },
   {
     key: 'classes',
     label: 'Total Classes',
     icon: BookOpen,
-    accent: 'border-t-emerald-500',
-    iconClass: 'bg-emerald-500/10 text-emerald-600',
+    tone: 3,
   },
   {
     key: 'todayAttendance',
     label: "Today's Attendance Rate",
     icon: ClipboardCheck,
-    accent: 'border-t-purple-500',
-    iconClass: 'bg-purple-500/10 text-purple-600',
+    tone: 4,
     // `{ marked, attended, rate }` — or null when nothing is marked yet.
     format: (value) => (value == null ? '—' : `${value.rate}%`),
     hint: (value) =>
@@ -92,33 +88,18 @@ export default function AdminDashboard() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {STAT_CARDS.map((card) => {
-          const Icon = card.icon
           const raw = stats?.[card.key]
-          const value = loading ? null : card.format ? card.format(raw) : raw ?? '—'
-          const hint = loading ? null : card.hint?.(raw) ?? null
 
           return (
-            <Card
+            <StatCard
               key={card.key}
-              className={cn('border-t-4 transition-shadow duration-200 hover:shadow-md', card.accent)}
-            >
-              <CardContent className="p-5">
-                <div
-                  className={cn('mb-4 flex h-10 w-10 items-center justify-center rounded-lg', card.iconClass)}
-                >
-                  <Icon className="h-5 w-5" aria-hidden="true" />
-                </div>
-
-                {value === null ? (
-                  <div className="h-9 w-16 animate-pulse rounded bg-muted" />
-                ) : (
-                  <p className="text-3xl font-semibold tabular-nums tracking-tight">{value}</p>
-                )}
-
-                <p className="mt-1 text-sm text-muted-foreground">{card.label}</p>
-                {hint ? <p className="text-xs text-muted-foreground/80">{hint}</p> : null}
-              </CardContent>
-            </Card>
+              icon={card.icon}
+              label={card.label}
+              tone={card.tone}
+              loading={loading}
+              value={card.format ? card.format(raw) : raw ?? '—'}
+              hint={card.hint?.(raw)}
+            />
           )
         })}
       </div>

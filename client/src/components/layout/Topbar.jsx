@@ -19,7 +19,7 @@ const titleFor = (pathname) => {
   return match?.label || 'Dashboard'
 }
 
-export default function Topbar({ onOpenSidebar }) {
+export default function Topbar({ onOpenSidebar, menuButtonRef }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -35,6 +35,7 @@ export default function Topbar({ onOpenSidebar }) {
         variant="ghost"
         size="icon"
         className="lg:hidden"
+        ref={menuButtonRef}
         onClick={onOpenSidebar}
         aria-label="Open navigation menu"
       >

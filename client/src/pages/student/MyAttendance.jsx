@@ -21,9 +21,9 @@ import { cn } from '@/lib/utils'
 import { getMyAttendance } from '@/services/attendance'
 
 const TONE_BORDER = {
-  strong: 'border-emerald-600',
-  fair: 'border-amber-500',
-  low: 'border-rose-600',
+  strong: 'border-success',
+  fair: 'border-warning',
+  low: 'border-destructive',
 }
 
 export default function MyAttendance() {
@@ -138,9 +138,9 @@ export default function MyAttendance() {
 
               <dl className="grid shrink-0 grid-cols-3 gap-4 text-center">
                 {[
-                  ['Present', overall.present, 'text-emerald-600'],
-                  ['Late', overall.late, 'text-amber-600'],
-                  ['Absent', overall.absent, 'text-rose-600'],
+                  ['Present', overall.present, 'text-success'],
+                  ['Late', overall.late, 'text-warning'],
+                  ['Absent', overall.absent, 'text-destructive'],
                 ].map(([label, value, color]) => (
                   <div key={label}>
                     <dd className={cn('text-xl font-semibold tabular-nums', color)}>{value}</dd>
@@ -196,7 +196,12 @@ export default function MyAttendance() {
                       </div>
                     </div>
 
-                    <div className="max-h-64 overflow-y-auto rounded-md border">
+                    <div
+                      className="max-h-64 overflow-y-auto rounded-md border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      tabIndex={0}
+                      role="region"
+                      aria-label={`${classDoc.code} attendance history`}
+                    >
                       <Table>
                         <TableHeader>
                           <TableRow className="hover:bg-transparent">
