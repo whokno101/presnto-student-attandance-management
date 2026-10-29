@@ -97,6 +97,29 @@ describe('regressions', () => {
     });
   });
 
+  describe('query strings', () => {
+    it('never turns query parameters into objects (no MongoDB operator injection)', async () => {
+      // The default "extended" parser made ?department[$ne]=x into { department: { $ne: 'x' } }.
+      const qs = require('node:querystring');
+      const parse = app().get('query parser fn');
+      const parsed = parse('department[$ne]=x&outcome[$gt]=&a=1');
+      assert.ok(Object.values(parsed).every((v) => typeof v === 'string'), JSON.stringify(parsed));
+      assert.deepEqual(parsed, qs.parse('department[$ne]=x&outcome[$gt]=&a=1'));
+
+      // ...so the bracketed key is just an unknown parameter and is ignored.
+      const res = await request(app()).get('/api/classes?department[$ne]=x').set('Authorization', `Bearer ${admin}`);
+      assert.equal(res.status, 200);
+      assert.equal(res.body.data.length, 1);
+    });
+
+    it('sends baseline security headers', async () => {
+      const res = await request(app()).get('/health');
+      assert.equal(res.headers['x-content-type-options'], 'nosniff');
+      assert.equal(res.headers['x-frame-options'], 'DENY');
+      assert.equal(res.headers['x-powered-by'], undefined);
+    });
+  });
+
   describe('attendance overview', () => {
     it('lists classes with no attendance and does not count unmarked students as at risk', async () => {
       const { Class } = require('../models');

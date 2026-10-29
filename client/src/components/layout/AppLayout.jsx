@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 
@@ -59,7 +59,16 @@ export default function AppLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onOpenSidebar={() => setSidebarOpen(true)} menuButtonRef={menuButtonRef} />
         <main id="main-content" tabIndex={-1} className="flex-1 p-4 focus:outline-none sm:p-6 lg:p-8">
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="space-y-4" role="status" aria-label="Loading page">
+                <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+                <div className="h-40 animate-pulse rounded-lg bg-muted" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>

@@ -21,7 +21,7 @@ never a palette shade** (`bg-success`, not `bg-emerald-600`).
 | `success` (+ `-foreground`) | Present, on track (≥ 90%), success toasts | `bg-success`, `text-success` |
 | `warning` (+ `-foreground`) | Late, watch (75–89%), full classes | `bg-warning`, `text-warning` |
 | `destructive` (+ `-foreground`) | Absent, at risk (< 75%), errors, destructive actions | `bg-destructive`, `text-destructive` |
-| `info` (+ `-foreground`) | Excused (status arrives with PB-15) | `bg-info` |
+| `info` (+ `-foreground`) | Excused | `bg-info` |
 | `border`, `input`, `ring` | Dividers, form control borders, focus ring | `border-input`, `ring-ring` |
 | `chart-1` … `chart-5` | Decorative accents (stat cards, chart series) | `border-t-chart-1`, `text-chart-2` |
 
@@ -97,7 +97,7 @@ Tailwind's 4px scale. Pages stack sections with `space-y-5`, cards pad
 | Attendance statuses | Present · Late · Absent · Excused |
 | Rate bands | On track (≥ 90%) · Watch (75–89%) · At risk (< 75%) · No data |
 | Removing a student/faculty account | **Deactivate** (reversible; history kept) |
-| Removing a class | **Archive** (reversible within the retention window; history kept) — arrives with PB-14 |
+| Removing a class | **Archive** (reversible within the retention window; history kept) |
 | Toast titles | Past tense for success ("Class created"), "Could not …" for failures |
 
 ## Brand

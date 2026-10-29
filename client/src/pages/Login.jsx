@@ -45,7 +45,10 @@ export default function Login() {
   // Where RequireAuth was sending the user (e.g. a scanned /check-in?token=…
   // link). Only in-app paths are honoured, never an external URL.
   const from = location.state?.from
-  const returnTo = from?.pathname && from.pathname.startsWith('/') && !from.pathname.startsWith('//') ? `${from.pathname}${from.search ?? ''}` : null
+  // Rejects protocol-relative and backslash paths ("//x", "/\\x"), which
+  // browsers treat as another origin.
+  const safePath = (path) => typeof path === 'string' && /^\/(?![/\\])/.test(path) && !/[\\]|%5c/i.test(path)
+  const returnTo = safePath(from?.pathname) ? `${from.pathname}${from.search ?? ''}` : null
   const [searchParams, setSearchParams] = useSearchParams()
   const { toast } = useToast()
 

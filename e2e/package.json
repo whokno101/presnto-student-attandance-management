@@ -1,0 +1,13 @@
+{
+  "name": "e2e",
+  "private": true,
+  "type": "module",
+  "description": "Browser acceptance tests for Sprint 02 (axe-core WCAG 2.1 AA scans, keyboard, workflows)",
+  "scripts": {
+    "test": "node run.mjs"
+  },
+  "devDependencies": {
+    "axe-core": "4.10.2",
+    "playwright": "1.49.1"
+  }
+}

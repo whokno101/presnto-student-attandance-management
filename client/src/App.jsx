@@ -1,3 +1,4 @@
+import { lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 
 import AppLayout from '@/components/layout/AppLayout'
@@ -6,28 +7,31 @@ import RequireRole from '@/components/auth/RequireRole'
 import Login from '@/pages/Login'
 import Unauthorized from '@/pages/Unauthorized'
 import NotFound from '@/pages/NotFound'
-import MyClasses from '@/pages/MyClasses'
-import Reports from '@/pages/Reports'
-import Notifications from '@/pages/Notifications'
-import DataExchange from '@/pages/DataExchange'
-import Excuses from '@/pages/student/Excuses'
-import ExcuseReview from '@/pages/faculty/ExcuseReview'
-import Analytics from '@/pages/admin/Analytics'
-import Schedule from '@/pages/admin/Schedule'
-import QrCheckin from '@/pages/faculty/QrCheckin'
-import CheckIn from '@/pages/student/CheckIn'
-import Insights from '@/pages/faculty/Insights'
-import AdminDashboard from '@/pages/admin/AdminDashboard'
-import AttendanceOverview from '@/pages/admin/AttendanceOverview'
-import ActivityLog from '@/pages/admin/ActivityLog'
-import ManageStudents from '@/pages/admin/ManageStudents'
-import ManageFaculty from '@/pages/admin/ManageFaculty'
-import ManageClasses from '@/pages/admin/ManageClasses'
-import MarkAttendance from '@/pages/faculty/MarkAttendance'
-import EnrollClasses from '@/pages/student/EnrollClasses'
-import MyAttendance from '@/pages/student/MyAttendance'
 import { useAuth } from '@/context/AuthContext'
 import { homeFor } from '@/lib/navigation'
+
+// Each page is its own chunk, so a role only downloads the screens it uses
+// (charts, QR and camera code stay out of the initial bundle).
+const MyClasses = lazy(() => import('@/pages/MyClasses'))
+const Reports = lazy(() => import('@/pages/Reports'))
+const Notifications = lazy(() => import('@/pages/Notifications'))
+const DataExchange = lazy(() => import('@/pages/DataExchange'))
+const Excuses = lazy(() => import('@/pages/student/Excuses'))
+const ExcuseReview = lazy(() => import('@/pages/faculty/ExcuseReview'))
+const Analytics = lazy(() => import('@/pages/admin/Analytics'))
+const Schedule = lazy(() => import('@/pages/admin/Schedule'))
+const QrCheckin = lazy(() => import('@/pages/faculty/QrCheckin'))
+const CheckIn = lazy(() => import('@/pages/student/CheckIn'))
+const Insights = lazy(() => import('@/pages/faculty/Insights'))
+const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'))
+const AttendanceOverview = lazy(() => import('@/pages/admin/AttendanceOverview'))
+const ActivityLog = lazy(() => import('@/pages/admin/ActivityLog'))
+const ManageStudents = lazy(() => import('@/pages/admin/ManageStudents'))
+const ManageFaculty = lazy(() => import('@/pages/admin/ManageFaculty'))
+const ManageClasses = lazy(() => import('@/pages/admin/ManageClasses'))
+const MarkAttendance = lazy(() => import('@/pages/faculty/MarkAttendance'))
+const EnrollClasses = lazy(() => import('@/pages/student/EnrollClasses'))
+const MyAttendance = lazy(() => import('@/pages/student/MyAttendance'))
 
 /** `/` sends each role to its own landing page. */
 function HomeRedirect() {
