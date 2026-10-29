@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const STATUSES = ['present', 'absent', 'late'];
+const STATUSES = ['present', 'late', 'absent', 'excused'];
 
 /**
  * Dates are normalized to UTC midnight before saving so that the composite

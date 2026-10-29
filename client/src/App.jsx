@@ -7,6 +7,7 @@ import Login from '@/pages/Login'
 import Unauthorized from '@/pages/Unauthorized'
 import NotFound from '@/pages/NotFound'
 import MyClasses from '@/pages/MyClasses'
+import Reports from '@/pages/Reports'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AttendanceOverview from '@/pages/admin/AttendanceOverview'
 import ActivityLog from '@/pages/admin/ActivityLog'
@@ -96,6 +97,14 @@ export default function App() {
           element={
             <RequireRole roles={['faculty', 'student']}>
               <MyClasses />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <RequireRole roles={['admin', 'faculty']}>
+              <Reports />
             </RequireRole>
           }
         />

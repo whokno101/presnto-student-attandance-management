@@ -44,22 +44,7 @@ const normalizeDay = (value) => {
   return Attendance.normalizeDate(parsed);
 };
 
-const summarise = (records) => {
-  const total = records.length;
-  const present = records.filter((r) => r.status === 'present').length;
-  const late = records.filter((r) => r.status === 'late').length;
-  const absent = records.filter((r) => r.status === 'absent').length;
-  const attended = present + late;
-
-  return {
-    total,
-    present,
-    late,
-    absent,
-    attended,
-    percentage: total ? Math.round((attended / total) * 1000) / 10 : 0,
-  };
-};
+const { summarise, TALLY_FIELDS, RATE_STAGE } = require('./metrics');
 
 /* ------------------------------------------------------------------ *
  *   The single attendance write path
@@ -265,19 +250,27 @@ const mark = (input) => applyRecords({ ...input, source: 'manual' });
 
 /** Roster + whatever is already marked, for the marking sheet. */
 const getClassDay = async (classId, date) => {
-  const classDoc = await Class.findById(classId).select('name code students');
+  const classDoc = await Class.findById(classId).select('name code students archivedAt');
   if (!classDoc) throw ApiError.notFound('Class not found');
 
   const day = normalizeDay(date);
 
-  const [students, marks] = await Promise.all([
+  const [students, marks, totals] = await Promise.all([
     Student.find({ _id: { $in: classDoc.students || [] } })
       .populate('user', 'name email')
       .sort({ studentId: 1 }),
-    Attendance.find({ class: classDoc._id, date: day }).select('student status remarks').lean(),
+    Attendance.find({ class: classDoc._id, date: day }).select('student status remarks source').lean(),
+    // Running totals for this class, derived from the stored records every time
+    // (PB-15): an edited or re-saved status can never leave a stale count.
+    Attendance.aggregate([
+      { $match: { class: classDoc._id } },
+      { $group: { _id: '$student', ...TALLY_FIELDS } },
+      RATE_STAGE,
+    ]),
   ]);
 
   const byStudent = new Map(marks.map((row) => [String(row.student), row]));
+  const totalsByStudent = new Map(totals.map((row) => [String(row._id), row]));
 
   return {
     classId: String(classDoc._id),
@@ -285,8 +278,10 @@ const getClassDay = async (classId, date) => {
     name: classDoc.name,
     date: day,
     marked: marks.length,
+    archived: Boolean(classDoc.archivedAt),
     students: students.map((student) => {
       const existing = byStudent.get(String(student._id));
+      const total = totalsByStudent.get(String(student._id));
       return {
         id: String(student._id),
         name: student.user?.name ?? '—',
@@ -294,7 +289,11 @@ const getClassDay = async (classId, date) => {
         studentId: student.studentId,
         department: student.department,
         status: existing?.status ?? null,
+        source: existing?.source ?? null,
         remarks: existing?.remarks ?? '',
+        absences: total?.absent ?? 0,
+        excused: total?.excused ?? 0,
+        rate: total && total.eligible > 0 ? total.rate : null,
       };
     }),
   };
@@ -379,17 +378,7 @@ const getMyReport = async (user) => {
  *   aggregation pipeline; nothing is tallied with a JS loop.
  * ------------------------------------------------------------------ */
 
-/** `present` and `late` both count as attended (see the module docblock). */
-const ATTENDED_EXPR = { $sum: { $cond: [{ $in: ['$status', ['present', 'late']] }, 1, 0] } };
-
-/** attended / marked x 100, rounded to one decimal (0 when nothing is marked). */
-const RATE_EXPR = {
-  $cond: [
-    { $gt: ['$marked', 0] },
-    { $round: [{ $multiply: [{ $divide: ['$attended', '$marked'] }, 100] }, 1] },
-    0,
-  ],
-};
+/** Rates come from ./metrics (attended / (marked − excused)), shared with every report. */
 
 /** Columns the admin table may be sorted by, plus their default direction. */
 const STUDENT_SORTS = {
@@ -403,9 +392,9 @@ const STUDENT_SORTS = {
 };
 
 const OVERALL_PIPELINE = [
-  { $group: { _id: null, marked: { $sum: 1 }, attended: ATTENDED_EXPR } },
-  { $set: { rate: RATE_EXPR } },
-  { $project: { _id: 0, marked: 1, attended: 1, rate: 1 } },
+  { $group: { _id: null, ...TALLY_FIELDS } },
+  RATE_STAGE,
+  { $project: { _id: 0, marked: 1, attended: 1, excused: 1, eligible: 1, rate: 1 } },
 ];
 
 /**
@@ -419,7 +408,7 @@ const BY_CLASS_PIPELINE = [
       let: { cid: '$_id' },
       pipeline: [
         { $match: { $expr: { $eq: ['$class', '$$cid'] } } },
-        { $group: { _id: null, marked: { $sum: 1 }, attended: ATTENDED_EXPR } },
+        { $group: { _id: null, ...TALLY_FIELDS } },
       ],
       as: 'tally',
     },
@@ -435,9 +424,10 @@ const BY_CLASS_PIPELINE = [
       students: { $size: { $ifNull: ['$students', []] } },
       marked: { $ifNull: [{ $arrayElemAt: ['$tally.marked', 0] }, 0] },
       attended: { $ifNull: [{ $arrayElemAt: ['$tally.attended', 0] }, 0] },
+      excused: { $ifNull: [{ $arrayElemAt: ['$tally.excused', 0] }, 0] },
     },
   },
-  { $set: { rate: RATE_EXPR } },
+  RATE_STAGE,
   {
     $project: {
       _id: 0,
@@ -449,6 +439,8 @@ const BY_CLASS_PIPELINE = [
       students: 1,
       marked: 1,
       attended: 1,
+      excused: 1,
+      eligible: 1,
       rate: 1,
     },
   },
@@ -479,7 +471,7 @@ const byStudentPipeline = ({ search, sortField, sortDir, skip, limit }) => [
       let: { sid: '$_id' },
       pipeline: [
         { $match: { $expr: { $eq: ['$student', '$$sid'] } } },
-        { $group: { _id: null, marked: { $sum: 1 }, attended: ATTENDED_EXPR } },
+        { $group: { _id: null, ...TALLY_FIELDS } },
       ],
       as: 'tally',
     },
@@ -490,9 +482,10 @@ const byStudentPipeline = ({ search, sortField, sortDir, skip, limit }) => [
       classes: { $size: { $ifNull: ['$enrolledClasses', []] } },
       marked: { $ifNull: [{ $arrayElemAt: ['$tally.marked', 0] }, 0] },
       attended: { $ifNull: [{ $arrayElemAt: ['$tally.attended', 0] }, 0] },
+      excused: { $ifNull: [{ $arrayElemAt: ['$tally.excused', 0] }, 0] },
     },
   },
-  { $set: { rate: RATE_EXPR } },
+  RATE_STAGE,
   {
     $facet: {
       // `rows` sorts -> skips -> limits -> shapes; `meta` counts everything.
@@ -510,6 +503,7 @@ const byStudentPipeline = ({ search, sortField, sortDir, skip, limit }) => [
             classes: 1,
             marked: 1,
             attended: 1,
+            eligible: 1,
             rate: 1,
           },
         },
@@ -523,10 +517,10 @@ const byStudentPipeline = ({ search, sortField, sortDir, skip, limit }) => [
           $group: {
             _id: null,
             total: { $sum: 1 },
-            noData: { $sum: { $cond: [{ $eq: ['$marked', 0] }, 1, 0] } },
+            noData: { $sum: { $cond: [{ $eq: ['$eligible', 0] }, 1, 0] } },
             green: { $sum: { $cond: [{ $gte: ['$rate', 90] }, 1, 0] } },
             amber: { $sum: { $cond: [{ $and: [{ $gte: ['$rate', 75] }, { $lt: ['$rate', 90] }] }, 1, 0] } },
-            red: { $sum: { $cond: [{ $and: [{ $gt: ['$marked', 0] }, { $lt: ['$rate', 75] }] }, 1, 0] } },
+            red: { $sum: { $cond: [{ $and: [{ $gt: ['$eligible', 0] }, { $lt: ['$rate', 75] }] }, 1, 0] } },
           },
         },
         { $project: { _id: 0, total: 1, noData: 1, green: 1, amber: 1, red: 1 } },
@@ -560,7 +554,7 @@ const overview = async (query = {}) => {
 
   return {
     data: {
-      overall: overallRows[0] ?? { marked: 0, attended: 0, rate: 0 },
+      overall: overallRows[0] ?? { marked: 0, attended: 0, excused: 0, eligible: 0, rate: 0 },
       byClass,
       byStudent: facet.rows,
       bands: facet.bands[0] ?? { total, noData: 0, green: 0, amber: 0, red: 0 },

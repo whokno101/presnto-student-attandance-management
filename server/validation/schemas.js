@@ -190,8 +190,8 @@ const attendanceMarkSchema = z.object({
     .array(
       z.object({
         studentId: objectId,
-        status: z.enum(['present', 'absent', 'late'], {
-          message: 'Status must be present, absent or late',
+        status: z.enum(['present', 'late', 'absent', 'excused'], {
+          message: 'Status must be present, late, absent or excused',
         }),
       })
     )

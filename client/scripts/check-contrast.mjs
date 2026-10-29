@@ -52,6 +52,8 @@ const PAIRS = [
   ['muted-foreground', 'muted', TEXT, 'secondary text on muted surfaces'],
   ['primary-foreground', 'primary', TEXT, 'primary buttons'],
   ['primary', 'background', TEXT, 'links, active nav'],
+  ['primary-foreground', 'primary-hover', TEXT, 'primary buttons (hover)'],
+  ['destructive-foreground', 'destructive-hover', TEXT, 'destructive buttons (hover)'],
   ['secondary-foreground', 'secondary', TEXT, 'secondary buttons/badges'],
   ['accent-foreground', 'accent', TEXT, 'hovered nav/menu items'],
   ['destructive-foreground', 'destructive', TEXT, 'Absent badge, error toast'],

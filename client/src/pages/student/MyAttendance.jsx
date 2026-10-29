@@ -119,7 +119,8 @@ export default function MyAttendance() {
                 </p>
                 <p className={cn('text-sm font-medium', TONE_TEXT[tone])}>{TONE_LABEL[tone]}</p>
                 <p className="text-xs text-muted-foreground">
-                  {overall.attended} of {overall.total} classes attended
+                  {overall.attended} of {overall.eligible ?? overall.total} classes attended
+                  {overall.excused ? ` (${overall.excused} excused)` : ''}
                 </p>
               </div>
 
@@ -136,11 +137,12 @@ export default function MyAttendance() {
                 </p>
               </div>
 
-              <dl className="grid shrink-0 grid-cols-3 gap-4 text-center">
+              <dl className="grid shrink-0 grid-cols-4 gap-4 text-center">
                 {[
                   ['Present', overall.present, 'text-success'],
                   ['Late', overall.late, 'text-warning'],
                   ['Absent', overall.absent, 'text-destructive'],
+                  ['Excused', overall.excused ?? 0, 'text-info'],
                 ].map(([label, value, color]) => (
                   <div key={label}>
                     <dd className={cn('text-xl font-semibold tabular-nums', color)}>{value}</dd>
@@ -165,6 +167,7 @@ export default function MyAttendance() {
                             {classDoc.code}
                           </Badge>
                           <CardTitle className="text-base">{classDoc.name}</CardTitle>
+                          {classDoc.archived ? <Badge variant="secondary">Archived</Badge> : null}
                         </div>
                         <CardDescription>
                           {classDoc.faculty ? `Taught by ${classDoc.faculty.name}` : 'No teacher assigned'}
@@ -181,11 +184,11 @@ export default function MyAttendance() {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>
-                          {classDoc.summary.attended} of {classDoc.summary.total} attended
+                          {classDoc.summary.attended} of {classDoc.summary.eligible ?? classDoc.summary.total} attended
                         </span>
                         <span>
                           {classDoc.summary.present}P · {classDoc.summary.late}L ·{' '}
-                          {classDoc.summary.absent}A
+                          {classDoc.summary.absent}A · {classDoc.summary.excused ?? 0}E
                         </span>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">

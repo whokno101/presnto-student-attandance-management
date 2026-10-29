@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useAuth } from '@/context/AuthContext'
+import usePolicy from '@/hooks/usePolicy'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/api'
 import { formatDay, STATUS_META, STATUS_ORDER, toYmd } from '@/lib/attendance'
@@ -24,6 +25,7 @@ const DEFAULT_STATUS = 'present'
 export default function MarkAttendance() {
   const { user } = useAuth()
   const { toast } = useToast()
+  const policy = usePolicy()
 
   const [classes, setClasses] = useState([])
   const [loadingClasses, setLoadingClasses] = useState(true)
@@ -135,7 +137,7 @@ export default function MarkAttendance() {
 
       toast({
         title: 'Attendance saved',
-        description: `${summary.present} present · ${summary.late} late · ${summary.absent} absent`,
+        description: `${summary.present} present · ${summary.late} late · ${summary.absent} absent${summary.excused ? ` · ${summary.excused} excused` : ''}. Absence counts updated.`,
         variant: 'success',
       })
 
@@ -258,6 +260,7 @@ export default function MarkAttendance() {
               <TableRow className="hover:bg-transparent">
                 <TableHead>Student</TableHead>
                 <TableHead>Student ID</TableHead>
+                <TableHead className="hidden md:table-cell">Class totals</TableHead>
                 <TableHead className="text-right">Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -271,6 +274,21 @@ export default function MarkAttendance() {
                   </TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">
                     {student.studentId}
+                  </TableCell>
+                  <TableCell className="hidden whitespace-nowrap text-xs md:table-cell">
+                    <span className={cn('font-semibold', student.absences >= policy.riskMinUnexcusedAbsences && 'text-destructive')}>
+                      {student.absences}
+                    </span>{' '}
+                    <span className="text-muted-foreground">
+                      {student.absences === 1 ? 'absence' : 'absences'}
+                      {student.excused ? ` · ${student.excused} excused` : ''}
+                      {student.rate != null ? ` · ${student.rate}%` : ''}
+                    </span>
+                    {student.source === 'qr' ? (
+                      <Badge variant="secondary" className="ml-2">
+                        QR
+                      </Badge>
+                    ) : null}
                   </TableCell>
                   <TableCell>
                     <div className="flex justify-end">
@@ -315,7 +333,7 @@ export default function MarkAttendance() {
     <div className="space-y-5">
       <PageHeader
         title="Mark Attendance"
-        description="Pick a class and a date, then mark every student present, late or absent."
+        description="Pick a class and a date, then mark every student present, late, absent or excused."
       />
 
       <Card>

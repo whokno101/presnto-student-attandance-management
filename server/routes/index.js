@@ -8,6 +8,7 @@ const facultyRoutes = require('./faculty');
 const classRoutes = require('./classes');
 const attendanceRoutes = require('./attendance');
 const auditRoutes = require('./audit');
+const reportRoutes = require('./reports');
 
 const router = express.Router();
 
@@ -22,6 +23,7 @@ router.use('/faculty', facultyRoutes);
 router.use('/classes', classRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/audit', auditRoutes);
+router.use('/reports', reportRoutes);
 
 /**
  * Institution policy the UI needs to label and format things consistently with
@@ -69,6 +71,7 @@ router.get('/permissions', requireAuth, (req, res) => {
       { method: 'DELETE', path: '/api/classes/:id', roles: ['admin'], notes: 'archives; history retained' },
       { method: 'POST', path: '/api/classes/:id/restore', roles: ['admin'] },
       { method: 'GET', path: '/api/audit', roles: ['admin'] },
+      { method: 'GET', path: '/api/reports/sessions|students|records', roles: ['admin', 'faculty'], notes: 'faculty: own classes only; ?format=csv exports' },
       { method: 'GET', path: '/api/audit/submissions', roles: ['admin'] },
       { method: 'GET', path: '/api/audit/:id', roles: ['admin'] },
       { method: 'GET', path: '/api/admin/stats', roles: ['admin'] },

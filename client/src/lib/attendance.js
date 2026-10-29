@@ -16,9 +16,16 @@ export const STATUS_META = {
     variant: 'destructive',
     active: 'bg-destructive text-destructive-foreground shadow-sm',
   },
+  excused: {
+    label: 'Excused',
+    variant: 'info',
+    active: 'bg-info text-info-foreground shadow-sm',
+  },
 }
 
-export const STATUS_ORDER = ['present', 'late', 'absent']
+export const STATUS_ORDER = ['present', 'late', 'absent', 'excused']
+
+export const STATUS_OPTIONS = STATUS_ORDER.map((value) => ({ value, label: STATUS_META[value].label }))
 
 /** Local calendar date -> `YYYY-MM-DD` (the format the API expects). */
 export const toYmd = (date) => {
@@ -44,7 +51,10 @@ const LOCAL_LONG = new Intl.DateTimeFormat('en-GB', {
 })
 
 /** Server dates are UTC midnight of a calendar day — never shift them. */
-export const formatDay = (value) => UTC_LONG.format(new Date(value))
+export const formatDay = (value) => {
+  const date = new Date(value)
+  return value == null || Number.isNaN(date.getTime()) ? '—' : UTC_LONG.format(date)
+}
 
 /** The picker holds a local Date, so format that one locally. */
 export const formatPickedDay = (value) => LOCAL_LONG.format(value)
