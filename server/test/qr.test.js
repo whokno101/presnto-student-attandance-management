@@ -6,7 +6,7 @@ process.env.INSTITUTION_TIME_ZONE = 'UTC';
 const { describe, it, before, after, beforeEach, afterEach, mock } = require('node:test');
 const assert = require('node:assert/strict');
 const bcrypt = require('bcryptjs');
-const { startDb, stopDb, resetDb, app, request, loginAs, seedBasic, PASSWORD } = require('./helpers');
+const { startDb, stopDb, resetDb, app, request, loginAs, seedBasic, PASSWORD, EVERY_DAY } = require('./helpers');
 
 const auth = (token) => ({ Authorization: `Bearer ${token}` });
 
@@ -21,7 +21,7 @@ describe('PB-20 QR check-in', () => {
 
   beforeEach(async () => {
     await resetDb();
-    fixture = await seedBasic({ studentCount: 2 });
+    fixture = await seedBasic({ studentCount: 2, schedule: EVERY_DAY });
     admin = await loginAs('admin@test.edu');
     faculty = await loginAs('faculty@test.edu');
     student = await loginAs('student1@test.edu');

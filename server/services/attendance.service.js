@@ -10,6 +10,7 @@
  */
 const Attendance = require('../models/Attendance');
 const Class = require('../models/Class');
+const ClassSession = require('../models/ClassSession');
 const Student = require('../models/Student');
 const { ApiError } = require('../utils/apiError');
 const { requireStudentProfile } = require('./access.service');
@@ -45,6 +46,22 @@ const normalizeDay = (value) => {
 };
 
 const { summarise, TALLY_FIELDS, RATE_STAGE } = require('./metrics');
+
+/**
+ * The days a class meets: its weekly meeting days, plus any one-off scheduled
+ * sessions (PB-22) as `YYYY-MM-DD`. Drives which dates the marking sheet offers.
+ */
+const classDays = async (classDoc) => {
+  const dates = await ClassSession.distinct('date', { class: classDoc._id, status: 'scheduled' });
+  return {
+    weekdays: Class.meetingsOf(classDoc.schedule).map((m) => m.day),
+    dates: dates.map(ymd).sort(),
+  };
+};
+
+const meetsOn = async (classDoc, day) =>
+  Boolean(Class.meetingOn(classDoc.schedule, weekdayOf(day))) ||
+  Boolean(await ClassSession.exists({ class: classDoc._id, date: day, status: 'scheduled' }));
 
 /* ------------------------------------------------------------------ *
  *   The single attendance write path
@@ -94,6 +111,14 @@ const applyRecords = async ({ classDoc, date, records, actor, source = 'manual',
 
   if (classDoc.archivedAt) {
     throw ApiError.conflict(`${classDoc.code} is archived; restore it before recording attendance`);
+  }
+
+  // A teacher marks only days the class meets; imports, excuses and QR keep
+  // their own rules.
+  if (source === 'manual' && !(await meetsOn(classDoc, day))) {
+    throw ApiError.validation(`${classDoc.code} has no class on ${ymd(day)}`, [
+      { field: 'date', message: 'Choose a day the class meets' },
+    ]);
   }
 
   const roster = new Set((classDoc.students || []).map((id) => String(id)));
@@ -586,6 +611,7 @@ module.exports = {
   onAttendanceChanged,
   auditOpened,
   mark,
+  classDays,
   getClassDay,
   getStudentReport,
   getMyReport,

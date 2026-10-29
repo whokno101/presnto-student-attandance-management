@@ -8,6 +8,10 @@ export const markAttendance = (payload) =>
 export const getClassAttendance = (classId, date) =>
   api.get(`/attendance/class/${classId}`, { params: { date } }).then((res) => res.data.data)
 
+/** The days a class meets: `{ weekdays: ['Monday', …], dates: ['YYYY-MM-DD', …] }`. */
+export const getClassDays = (classId) =>
+  api.get(`/attendance/class/${classId}/days`).then((res) => res.data.data)
+
 /** The signed-in student's own report (grouped by class). */
 export const getMyAttendance = () => api.get('/attendance/my').then((res) => res.data.data)
 

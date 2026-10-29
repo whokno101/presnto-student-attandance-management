@@ -7,7 +7,7 @@ process.env.INSTITUTION_TIME_ZONE = 'Pacific/Kiritimati';
 
 const { describe, it, before, after, beforeEach, mock } = require('node:test');
 const assert = require('node:assert/strict');
-const { startDb, stopDb, resetDb, app, request, loginAs, seedBasic } = require('./helpers');
+const { startDb, stopDb, resetDb, app, request, loginAs, seedBasic, EVERY_DAY } = require('./helpers');
 const { todayInInstitution } = require('../utils/dates');
 
 const ymd = (date) => date.toISOString().slice(0, 10);
@@ -21,7 +21,7 @@ describe('regressions', () => {
 
   beforeEach(async () => {
     await resetDb();
-    fixture = await seedBasic();
+    fixture = await seedBasic({ schedule: EVERY_DAY });
     admin = await loginAs('admin@test.edu');
   });
 
@@ -45,6 +45,37 @@ describe('regressions', () => {
 
       assert.equal(res.status, 400);
       assert.ok(res.body.error.details.some((d) => d.field === 'day' && d.message === 'Select a valid day'));
+    });
+  });
+
+  describe('marking only on class days', () => {
+    // 2026-10-26 is a Monday, 2026-10-27 a Tuesday.
+    const mark = (date) =>
+      request(app())
+        .post('/api/attendance/mark')
+        .set('Authorization', `Bearer ${admin}`)
+        .send({ classId: String(fixture.classDoc._id), date, records: [{ studentId: String(fixture.students[0]._id), status: 'present' }] });
+
+    beforeEach(async () => {
+      const { Class } = require('../models');
+      await Class.updateOne({ _id: fixture.classDoc._id }, { $set: { schedule: [{ day: 'Monday', startTime: '09:00', endTime: '10:00' }] } });
+    });
+
+    it('rejects a day the class does not meet', async () => {
+      const res = await mark('2026-10-27');
+      assert.equal(res.status, 400);
+      assert.match(res.body.error.message, /has no class on 2026-10-27/);
+      assert.equal((await mark('2026-10-26')).status, 200);
+    });
+
+    it('accepts a one-off scheduled session and lists it among the class days', async () => {
+      const ClassSession = require('../models/ClassSession');
+      await ClassSession.create({ class: fixture.classDoc._id, room: 'A-1', date: new Date('2026-10-27T00:00:00.000Z'), startTime: '09:00', endTime: '10:00', startMinutes: 540, endMinutes: 600 });
+      assert.equal((await mark('2026-10-27')).status, 200);
+
+      const days = await request(app()).get(`/api/attendance/class/${fixture.classDoc._id}/days`).set('Authorization', `Bearer ${admin}`);
+      assert.equal(days.status, 200);
+      assert.deepEqual(days.body.data, { weekdays: ['Monday'], dates: ['2026-10-27'] });
     });
   });
 

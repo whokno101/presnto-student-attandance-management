@@ -16,6 +16,8 @@ router.use(requireAuth);
  *   GET  /api/attendance/overview        admin only (all rates)
  *   GET  /api/attendance/class/:id       admin | faculty (own classes)
  *                                        ?date=YYYY-MM-DD (default: today)
+ *   GET  /api/attendance/class/:id/days  admin | faculty (own classes)
+ *                                        weekly meeting days + scheduled dates
  * ------------------------------------------------------------------ */
 
 router.post(
@@ -70,6 +72,15 @@ router.get(
     const sheet = await attendanceService.getClassDay(req.params.id, req.query.date);
     await attendanceService.auditOpened({ classDoc, day: sheet.date, actor: req.user });
     res.json({ data: sheet });
+  })
+);
+
+router.get(
+  '/class/:id/days',
+  requireRole('admin', 'faculty'),
+  asyncHandler(async (req, res) => {
+    const { classDoc } = await assertClassAccess(req.user, req.params.id);
+    res.json({ data: await attendanceService.classDays(classDoc) });
   })
 );
 

@@ -6,7 +6,7 @@ process.env.INSTITUTION_TIME_ZONE = 'UTC';
 const { describe, it, before, after, beforeEach } = require('node:test');
 const assert = require('node:assert/strict');
 const mongoose = require('mongoose');
-const { startDb, stopDb, resetDb, app, request, loginAs, seedBasic } = require('./helpers');
+const { startDb, stopDb, resetDb, app, request, loginAs, seedBasic, EVERY_DAY } = require('./helpers');
 const { todayInInstitution, addDays, ymd, weekdayOf } = require('../utils/dates');
 
 const auth = (token) => ({ Authorization: `Bearer ${token}` });
@@ -21,7 +21,7 @@ describe('PB-13 activity log', () => {
 
   beforeEach(async () => {
     await resetDb();
-    fixture = await seedBasic();
+    fixture = await seedBasic({ schedule: EVERY_DAY });
     admin = await loginAs('admin@test.edu');
     faculty = await loginAs('faculty@test.edu');
   });

@@ -35,8 +35,11 @@ const loginAs = async (email) => {
   return res.body.token;
 };
 
+/** A class that meets every day, for suites that mark attendance on "today". */
+const EVERY_DAY = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => ({ day, startTime: '09:00', endTime: '10:00' }));
+
 /** One admin, one faculty member teaching one class, and `studentCount` enrolled students. */
-const seedBasic = async ({ studentCount = 2 } = {}) => {
+const seedBasic = async ({ studentCount = 2, schedule = { day: 'Monday', startTime: '09:00', endTime: '10:00' } } = {}) => {
   const { User, Faculty, Student, Class } = require('../models');
   const passwordHash = await bcrypt.hash(PASSWORD, 4);
 
@@ -56,7 +59,7 @@ const seedBasic = async ({ studentCount = 2 } = {}) => {
     code: 'CS-101',
     department: 'Computer Science',
     semester: 'Fall 2026',
-    schedule: { day: 'Monday', startTime: '09:00', endTime: '10:00' },
+    schedule,
     faculty: faculty._id,
     students: students.map((s) => s._id),
   });
@@ -65,4 +68,4 @@ const seedBasic = async ({ studentCount = 2 } = {}) => {
   return { faculty, students, classDoc };
 };
 
-module.exports = { PASSWORD, startDb, stopDb, resetDb, app, request, loginAs, seedBasic };
+module.exports = { PASSWORD, EVERY_DAY, startDb, stopDb, resetDb, app, request, loginAs, seedBasic };

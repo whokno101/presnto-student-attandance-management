@@ -7,9 +7,12 @@ import { formatPickedDay } from '@/lib/attendance'
 
 /**
  * Single-date picker: a trigger button showing the chosen day, and a calendar
- * in a popover. `maxDate` blocks future dates (attendance cannot be pre-marked).
+ * in a popover. `maxDate` blocks future dates (attendance cannot be pre-marked);
+ * `isAllowed(day)` greys out any other day that cannot be picked.
  */
-export default function DatePicker({ id, value, onChange, maxDate, disabled }) {
+export default function DatePicker({ id, value, onChange, maxDate, isAllowed, disabled }) {
+  const blocked = [maxDate && { after: maxDate }, isAllowed && ((day) => !isAllowed(day))].filter(Boolean)
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -31,7 +34,7 @@ export default function DatePicker({ id, value, onChange, maxDate, disabled }) {
           selected={value}
           onSelect={(day) => day && onChange(day)}
           defaultMonth={value}
-          disabled={maxDate ? { after: maxDate } : undefined}
+          disabled={blocked.length ? blocked : undefined}
           initialFocus
         />
       </PopoverContent>
