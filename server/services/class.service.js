@@ -242,38 +242,41 @@ const assignFaculty = async (classId, facultyId, actor) => {
   }
 
   // An instructor cannot take on a class whose scheduled sessions overlap
-  // their existing teaching (PB-23).
+  // their existing teaching (PB-23). Checked and written under the schedule
+  // lock so a concurrent booking for the same teacher cannot slip in between.
   const scheduleService = require('./schedule.service');
-  if (nextFacultyId) await scheduleService.assertInstructorFree(classDoc._id, nextFacultyId);
+  await scheduleService.withScheduleLock(async () => {
+    if (nextFacultyId) await scheduleService.assertInstructorFree(classDoc._id, nextFacultyId);
 
-  await Class.updateOne({ _id: classDoc._id }, { $set: { faculty: nextFacultyId } });
+    await Class.updateOne({ _id: classDoc._id }, { $set: { faculty: nextFacultyId } });
 
-  try {
-    if (nextFacultyId) {
+    try {
+      if (nextFacultyId) {
+        await Faculty.updateOne(
+          { _id: nextFacultyId },
+          { $addToSet: { classesAssigned: classDoc._id } }
+        );
+      }
+      if (previousFacultyId) {
+        await Faculty.updateOne(
+          { _id: previousFacultyId },
+          { $pull: { classesAssigned: classDoc._id } }
+        );
+      }
+    } catch (err) {
+      // Put the class back where it was so the two sides cannot drift.
+      await Class.updateOne({ _id: classDoc._id }, { $set: { faculty: previousFacultyId } }).catch(
+        () => {}
+      );
       await Faculty.updateOne(
         { _id: nextFacultyId },
-        { $addToSet: { classesAssigned: classDoc._id } }
-      );
-    }
-    if (previousFacultyId) {
-      await Faculty.updateOne(
-        { _id: previousFacultyId },
         { $pull: { classesAssigned: classDoc._id } }
-      );
+      ).catch(() => {});
+      throw err;
     }
-  } catch (err) {
-    // Put the class back where it was so the two sides cannot drift.
-    await Class.updateOne({ _id: classDoc._id }, { $set: { faculty: previousFacultyId } }).catch(
-      () => {}
-    );
-    await Faculty.updateOne(
-      { _id: nextFacultyId },
-      { $pull: { classesAssigned: classDoc._id } }
-    ).catch(() => {});
-    throw err;
-  }
 
-  await scheduleService.syncFaculty(classDoc._id, nextFacultyId);
+    await scheduleService.syncFaculty(classDoc._id, nextFacultyId);
+  });
 
   const previousName = previousFacultyId
     ? (await Faculty.findById(previousFacultyId).populate('user', 'name'))?.user?.name ?? 'previous teacher'

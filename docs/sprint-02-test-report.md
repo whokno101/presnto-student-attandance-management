@@ -6,7 +6,7 @@ Evidence for the Sprint 02 Execution Handbook (PB-12 – PB-23), handbook §17
 ## How to reproduce
 
 ```bash
-npm test --workspace=server              # API: 90 tests, in-memory MongoDB
+npm test --workspace=server              # API: 91 tests, in-memory MongoDB
 npm run dev:server & npm run dev:client &
 cd e2e && npm install && npm test        # browser: 7 suites, 165 checks (reseeds the DB)
 npm run check:contrast --workspace=client   # design tokens vs WCAG 2.1 AA
@@ -21,7 +21,7 @@ npm run check:contrast --workspace=client   # design tokens vs WCAG 2.1 AA
 | `server/test/reports.test.js` | PB-15 reports, filters, absence counting, CSV export | 10 / 10 pass |
 | `server/test/analytics-risk.test.js` | PB-12 analytics, PB-16 insights and alerts | 16 / 16 pass |
 | `server/test/data-excuses.test.js` | PB-17 CSV import/export, PB-19 excuses | 19 / 19 pass |
-| `server/test/schedule.test.js` | PB-22 multi-date scheduling, PB-23 conflicts | 11 / 11 pass |
+| `server/test/schedule.test.js` | PB-22 multi-date scheduling, PB-23 conflicts | 12 / 12 pass |
 | `server/test/qr.test.js` | PB-20 QR check-in (mocked clock) | 8 / 8 pass |
 | `e2e/01-design-system.mjs` | PB-18/PB-21: axe scan of every page for every role, skip link, focus management, 390px layouts, logo fallback | 35 / 35 pass |
 | `e2e/02-activity-archive.mjs` | Activity Log UI, timeliness, archive → archived tab → restore | 24 / 24 pass |
@@ -50,7 +50,7 @@ state with zero violations.
 | CSV permissions | Faculty imports faculty list | Denied server-side | `data-excuses` "AC-2" (403) |
 | Excuse | Submit and leave pending | Attendance not changed | `data-excuses` "AC-4 pending excuse" |
 | QR | Expired token, double scan | Rejected; no duplicate | `qr` "two rotations old", "AC-4 … never duplicates"; e2e 07 |
-| Schedule | Overlapping room/instructor | Rejected with explanation | `schedule` "overlapping room", "overlapping instructor", "concurrent saves"; e2e 06 |
+| Schedule | Overlapping room/instructor | Rejected with explanation | `schedule` "overlapping room", "overlapping instructor", "concurrent saves", "assigning a teacher and booking that teacher at the same time"; e2e 06 |
 | Accessibility | Forms and dialogs by keyboard | Visible focus, operable, focus returned | e2e 01 (skip link, drawer trap, Escape, focus return, aria wiring) |
 
 ## Acceptance criteria coverage

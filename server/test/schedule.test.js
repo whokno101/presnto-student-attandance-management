@@ -124,6 +124,16 @@ describe('PB-22/PB-23 scheduling and conflicts', () => {
     assert.match(res.body.error.message, /overlapping session/);
   });
 
+  it('PB-23: assigning a teacher and booking that teacher at the same time — exactly one wins', async () => {
+    await create({ ...base(otherClass._id), room: 'B-2', dates: [inDays(5)], startTime: '09:30', endTime: '10:30' });
+    const [assign, booking] = await Promise.all([
+      request(app()).put(`/api/classes/${otherClass._id}/assign-faculty`).set(auth(admin)).send({ facultyId: String(fixture.faculty._id) }),
+      create({ ...base(), dates: [inDays(5)] }),
+    ]);
+    assert.deepEqual([assign.status === 200, booking.status === 201].sort(), [false, true], `${assign.status} / ${booking.status}`);
+    assert.ok([assign.status, booking.status].includes(409));
+  });
+
   it('scheduled sessions drive the submission timeliness view', async () => {
     const { ClassSession } = require('../models');
     const yesterday = addDays(todayInInstitution(), -2);

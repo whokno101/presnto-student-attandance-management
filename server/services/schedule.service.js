@@ -57,9 +57,19 @@ const withScheduleLock = async (fn) => {
 
   if (!acquired) throw ApiError.conflict('The schedule is being updated by someone else. Try again in a moment.');
 
+  // Keep extending the lease while the work runs, so a long import cannot
+  // outlive the lock and let another writer in.
+  const heartbeat = setInterval(() => {
+    ScheduleLock.updateOne(
+      { _id: 'schedule', owner },
+      { $set: { lockedUntil: new Date(Date.now() + LOCK_TTL_MS) } }
+    ).catch(() => {});
+  }, LOCK_TTL_MS / 3);
+
   try {
     return await fn();
   } finally {
+    clearInterval(heartbeat);
     await ScheduleLock.updateOne({ _id: 'schedule', owner }, { $set: { lockedUntil: new Date(0) } });
   }
 };
