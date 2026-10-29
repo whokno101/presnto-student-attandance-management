@@ -13,6 +13,7 @@ import DataExchange from '@/pages/DataExchange'
 import Excuses from '@/pages/student/Excuses'
 import ExcuseReview from '@/pages/faculty/ExcuseReview'
 import Analytics from '@/pages/admin/Analytics'
+import Schedule from '@/pages/admin/Schedule'
 import Insights from '@/pages/faculty/Insights'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AttendanceOverview from '@/pages/admin/AttendanceOverview'
@@ -103,6 +104,14 @@ export default function App() {
           element={
             <RequireRole roles={['faculty', 'student']}>
               <MyClasses />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/schedule"
+          element={
+            <RequireRole roles={['admin']}>
+              <Schedule />
             </RequireRole>
           }
         />

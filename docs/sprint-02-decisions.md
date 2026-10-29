@@ -54,6 +54,18 @@ and are never combined.
 | Soft-delete retention | **90 days** restorable (`RETENTION_DAYS`) (PB-14) |
 | QR token rotation | every **15 seconds** (PB-20) |
 
+## Scheduling (PB-22, PB-23)
+
+| Rule | Value |
+| --- | --- |
+| Multi-date requests | All-or-nothing: if any date conflicts, nothing is saved and every rejected date is reported with its reason |
+| Overlap | Same room, or same instructor, with intersecting times on the same day (back-to-back slots are allowed) |
+| Past dates | Cannot be scheduled |
+| Archiving a class | Cancels its future sessions (kept as history), freeing the room and teacher |
+| Restoring a class | Does **not** revive those cancelled sessions, so a restore can never create a conflict; reschedule from the Schedule page |
+| Assigning a teacher | Rejected if the class's future sessions overlap that teacher's other sessions |
+| CSV session imports | Same rules; conflicting rows (including rows conflicting with each other) are rejected and reported, the rest are booked |
+
 ## Permissions that need an explicit switch
 
 | Capability | Default |
