@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AlertCircle, AlertTriangle, BarChart3, CalendarDays, Download, FileSpreadsheet, Loader2, RotateCcw, UserX } from 'lucide-react'
 
 import EmptyState from '@/components/common/EmptyState'
@@ -74,12 +75,16 @@ export default function Reports() {
   const { toast } = useToast()
   const { faculty, classes } = useFilterOptions()
 
-  const [view, setView] = useState('sessions')
-  const [range, setRange] = useState(defaultRange)
-  const [filters, setFilters] = useState(EMPTY)
-  const [studentInput, setStudentInput] = useState('')
+  // Links from Insights/notifications open a pre-filtered view (?view&classId&student).
+  const [searchParams] = useSearchParams()
+  const initialView = VIEWS[searchParams.get('view')] ? searchParams.get('view') : 'sessions'
+  const linked = Boolean(searchParams.get('classId') || searchParams.get('student'))
+  const [view, setView] = useState(initialView)
+  const [range, setRange] = useState(() => (linked ? { from: '', to: '' } : defaultRange()))
+  const [filters, setFilters] = useState(() => ({ ...EMPTY, classId: searchParams.get('classId') ?? '' }))
+  const [studentInput, setStudentInput] = useState(searchParams.get('student') ?? '')
   const student = useDebounced(studentInput.trim())
-  const [sort, setSort] = useState(VIEWS.sessions.defaultSort)
+  const [sort, setSort] = useState(VIEWS[initialView].defaultSort)
   const [page, setPage] = useState(1)
   const [exporting, setExporting] = useState(false)
 

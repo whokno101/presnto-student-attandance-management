@@ -3,6 +3,7 @@ import { LogOut, Menu } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import NotificationBell from '@/components/layout/NotificationBell'
 import { navItemsFor, ROLE_LABEL } from '@/lib/navigation'
 import { useAuth } from '@/context/AuthContext'
 
@@ -49,6 +50,7 @@ export default function Topbar({ onOpenSidebar, menuButtonRef }) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
+        <NotificationBell />
         <div className="hidden text-right sm:block">
           <p className="max-w-[180px] truncate text-sm font-medium leading-tight">{user?.name}</p>
           <p className="max-w-[180px] truncate text-xs text-muted-foreground">{user?.email}</p>

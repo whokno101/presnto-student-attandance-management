@@ -432,6 +432,16 @@ const seedDatabase = async () => {
   });
   await mongoose.connection.collection('auditlogs').insertMany(auditEntries);
 
+  // Evaluate PB-16 risk for every class so faculty start with their alerts.
+  console.log('Evaluating at-risk students...');
+  const riskService = require('./services/risk.service');
+  let alerts = 0;
+  for (const classDoc of createdClasses) {
+    // eslint-disable-next-line no-await-in-loop
+    alerts += (await riskService.evaluate(classDoc._id)).newlyAtRisk;
+  }
+  console.log(`  ${alerts} at-risk alerts sent to faculty`);
+
   /* ---------------------------------------------------------------- *
    * 5. Summary — read back from MongoDB so the numbers reflect the database
    * ---------------------------------------------------------------- */

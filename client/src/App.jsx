@@ -8,6 +8,9 @@ import Unauthorized from '@/pages/Unauthorized'
 import NotFound from '@/pages/NotFound'
 import MyClasses from '@/pages/MyClasses'
 import Reports from '@/pages/Reports'
+import Notifications from '@/pages/Notifications'
+import Analytics from '@/pages/admin/Analytics'
+import Insights from '@/pages/faculty/Insights'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AttendanceOverview from '@/pages/admin/AttendanceOverview'
 import ActivityLog from '@/pages/admin/ActivityLog'
@@ -100,6 +103,23 @@ export default function App() {
             </RequireRole>
           }
         />
+        <Route
+          path="/admin/analytics"
+          element={
+            <RequireRole roles={['admin']}>
+              <Analytics />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/insights"
+          element={
+            <RequireRole roles={['admin', 'faculty']}>
+              <Insights />
+            </RequireRole>
+          }
+        />
+        <Route path="/notifications" element={<Notifications />} />
         <Route
           path="/reports"
           element={

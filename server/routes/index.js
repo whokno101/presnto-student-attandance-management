@@ -9,6 +9,11 @@ const classRoutes = require('./classes');
 const attendanceRoutes = require('./attendance');
 const auditRoutes = require('./audit');
 const reportRoutes = require('./reports');
+const analyticsRoutes = require('./analytics');
+const notificationRoutes = require('./notifications');
+
+// Registers the attendance-change hook that re-evaluates risk (PB-16).
+require('../services/risk.service');
 
 const router = express.Router();
 
@@ -24,6 +29,8 @@ router.use('/classes', classRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/audit', auditRoutes);
 router.use('/reports', reportRoutes);
+router.use('/analytics', analyticsRoutes);
+router.use('/notifications', notificationRoutes);
 
 /**
  * Institution policy the UI needs to label and format things consistently with
@@ -71,6 +78,9 @@ router.get('/permissions', requireAuth, (req, res) => {
       { method: 'DELETE', path: '/api/classes/:id', roles: ['admin'], notes: 'archives; history retained' },
       { method: 'POST', path: '/api/classes/:id/restore', roles: ['admin'] },
       { method: 'GET', path: '/api/audit', roles: ['admin'] },
+      { method: 'GET', path: '/api/analytics/admin', roles: ['admin'] },
+      { method: 'GET', path: '/api/analytics/faculty', roles: ['admin', 'faculty'], notes: 'faculty: own classes only' },
+      { method: 'GET', path: '/api/notifications', roles: ['admin', 'faculty', 'student'], notes: 'own notifications only' },
       { method: 'GET', path: '/api/reports/sessions|students|records', roles: ['admin', 'faculty'], notes: 'faculty: own classes only; ?format=csv exports' },
       { method: 'GET', path: '/api/audit/submissions', roles: ['admin'] },
       { method: 'GET', path: '/api/audit/:id', roles: ['admin'] },

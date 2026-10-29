@@ -1,5 +1,7 @@
 import {
   BarChart3,
+  Bell,
+  LineChart,
   BookOpen,
   CalendarCheck,
   ClipboardCheck,
@@ -30,13 +32,16 @@ export const NAV_ITEMS = [
   { to: '/admin/faculty', label: 'Manage Faculty', icon: GraduationCap, roles: ['admin'] },
   { to: '/admin/classes', label: 'Manage Classes', icon: BookOpen, roles: ['admin'] },
   { to: '/admin/attendance', label: 'Attendance Overview', icon: BarChart3, roles: ['admin'] },
+  { to: '/admin/analytics', label: 'Analytics', icon: LineChart, roles: ['admin'] },
   { to: '/reports', label: 'Attendance Reports', icon: FileBarChart, roles: ['admin'] },
   { to: '/admin/activity', label: 'Activity Log', icon: History, roles: ['admin'] },
   { to: '/enroll', label: 'Enroll in Classes', icon: UserPlus, roles: ['student'] },
   { to: '/classes', label: 'My Classes', icon: BookOpen, roles: ['faculty', 'student'] },
   { to: '/attendance/mark', label: 'Mark Attendance', icon: ClipboardCheck, roles: ['faculty'] },
+  { to: '/insights', label: 'Insights', icon: LineChart, roles: ['faculty'] },
   { to: '/reports', label: 'Class Reports', icon: FileBarChart, roles: ['faculty'] },
   { to: '/my-attendance', label: 'My Attendance', icon: CalendarCheck, roles: ['student'] },
+  { to: '/notifications', label: 'Notifications', icon: Bell, roles: ['admin', 'faculty', 'student'] },
 ]
 
 export const navItemsFor = (role) => NAV_ITEMS.filter((item) => item.roles.includes(role))

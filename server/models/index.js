@@ -9,6 +9,8 @@ const Class = require('./Class');
 const Attendance = require('./Attendance');
 const AuditLog = require('./AuditLog');
 const ClassSession = require('./ClassSession');
+const RiskState = require('./RiskState');
+const Notification = require('./Notification');
 
 module.exports = {
   User,
@@ -18,6 +20,8 @@ module.exports = {
   Attendance,
   AuditLog,
   ClassSession,
+  RiskState,
+  Notification,
   ROLES: require('./User').ROLES,
   DAYS: require('./Class').DAYS,
   ATTENDANCE_STATUSES: require('./Attendance').STATUSES,
