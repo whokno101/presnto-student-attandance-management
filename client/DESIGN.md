@@ -222,7 +222,7 @@ A near-black ink and warm-neutral grey system with a single saturated signal yel
 - **Timetable Ink** (`primary`, ≈ #0A0C0F): the action colour on light. Primary buttons, the focus ring, the user initials block, text selection. In dark theme the primary inverts to **Panel White** (`primary-dark`, ≈ #F3F3F1) with ink text, so the strongest action is always the brightest object on the plane.
 
 ### Secondary
-- **Signal Yellow** (`signal`, #FFD400): the only yellow in the app, always with ink text (`signal-foreground`). Used for the board's live row chip ("In session", "Check-in · 104/140"), a changed hall chip, the check-in pass's IN SESSION chip, the camera scan line, and the `signal-in` flash when a row or a check-in result lands. Identical in both themes.
+- **Signal Yellow** (`signal`, #FFD400): the only yellow in the app, always with ink text (`signal-foreground`). Used for the board's live row chip ("In session", "Check-in", with any count such as 104/140 set beside it in plain tabular mono, never inside the chip), a changed hall chip, the check-in pass's IN SESSION chip, the camera scan line, and the `signal-in` flash when a row or a check-in result lands. Identical in both themes.
 
 ### Tertiary
 - **Status hues**, light / dark: **Present Green** (`success` / `success-dark`), **Late Amber** (`warning` / `warning-dark`), **Absent Red** (`destructive` / `destructive-dark`), **Excused Blue** (`info` / `info-dark`). Attendance statuses and rate bands map onto these: Present, On track (≥ 90%) green; Late, Watch (75-89%) amber; Absent, At risk (< 75%) red; Excused blue. On the shell the board uses **Shell Ok** and **Shell Alert** (the status hues on light, brighter on dark) for closed and low-attendance rows.
@@ -306,7 +306,7 @@ Condensed capitals on flat fills; they press down 1px when clicked.
 
 ### Chips
 - **Status badge:** 2px corners, condensed capitals at 0.78rem with 0.08em tracking, solid status fill with its paired foreground (success, warning, destructive, info), or secondary for neutral facts (Archived, "3 enrolled").
-- **Signal chip:** signal fill, ink text, 2px corners, condensed bold capitals at 0.9rem. Used only for live and changed state (see The Signal Rule).
+- **Signal chip:** signal fill, ink text, 2px corners, condensed bold capitals at 0.9rem; `compact` on the departures board (0.78rem, 0.08em, the status-badge size). Holds one short word or a hall, never a figure, and never wraps. Used only for live and changed state (see The Signal Rule).
 
 ### Cards / Containers
 - **Corner Style:** 4px.
