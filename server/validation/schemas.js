@@ -97,6 +97,30 @@ const facultyUpdateSchema = nonEmptyUpdate({
  * Classes
  * ------------------------------------------------------------------ */
 
+const classDay = z.enum(DAYS, {
+  error: (issue) => (issue.input === undefined ? 'Day is required' : 'Select a valid day'),
+});
+
+const withTimeOrder = (schema) =>
+  schema.refine((value) => !value.startTime || !value.endTime || value.endTime > value.startTime, {
+    message: 'End time must be after start time',
+    path: ['endTime'],
+  });
+
+/** Weekly meetings: one entry per day, each with its own times. */
+const classSchedule = z
+  .array(withTimeOrder(z.object({ day: classDay, startTime: timeString, endTime: timeString })), {
+    error: 'Pick at least one day',
+  })
+  .min(1, 'Pick at least one day')
+  .refine((meetings) => new Set(meetings.map((m) => m.day)).size === meetings.length, {
+    message: 'Each day can only be added once',
+  });
+
+/*
+ * `schedule` is the full list of meetings. The flat day/startTime/endTime
+ * fields remain as a one-day shorthand for older clients.
+ */
 const classBaseSchema = z.object({
   name: z
     .string({ error: 'Class name is required' })
@@ -113,11 +137,10 @@ const classBaseSchema = z.object({
     .trim()
     .min(1, 'Semester is required')
     .max(20, 'Semester cannot exceed 20 characters'),
-  day: z.enum(DAYS, {
-    error: (issue) => (issue.input === undefined ? 'Day is required' : 'Select a valid day'),
-  }),
-  startTime: timeString,
-  endTime: timeString,
+  schedule: classSchedule.optional(),
+  day: classDay.optional(),
+  startTime: timeString.optional(),
+  endTime: timeString.optional(),
   facultyId: z
     .string()
     .regex(/^[0-9a-fA-F]{24}$/, 'Invalid faculty identifier')
@@ -126,13 +149,10 @@ const classBaseSchema = z.object({
   room: z.string().trim().max(30, 'Room cannot exceed 30 characters').optional(),
 });
 
-const withTimeOrder = (schema) =>
-  schema.refine((value) => !value.startTime || !value.endTime || value.endTime > value.startTime, {
-    message: 'End time must be after start time',
-    path: ['endTime'],
-  });
-
-const classCreateSchema = withTimeOrder(classBaseSchema);
+const classCreateSchema = withTimeOrder(classBaseSchema).refine(
+  (value) => value.schedule || (value.day && value.startTime && value.endTime),
+  { message: 'Pick at least one day with a start and end time', path: ['schedule'] }
+);
 
 const classUpdateSchema = withTimeOrder(
   nonEmptyUpdate({
@@ -140,7 +160,8 @@ const classUpdateSchema = withTimeOrder(
     code: classBaseSchema.shape.code.optional(),
     department: department.optional(),
     semester: classBaseSchema.shape.semester.optional(),
-    day: classBaseSchema.shape.day.optional(),
+    schedule: classSchedule.optional(),
+    day: classDay.optional(),
     startTime: timeString.optional(),
     endTime: timeString.optional(),
     facultyId: classBaseSchema.shape.facultyId,

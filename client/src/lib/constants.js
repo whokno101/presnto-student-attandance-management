@@ -33,8 +33,18 @@ export const PAGE_SIZES = [10, 25, 50]
 
 export const DEFAULT_PAGE_SIZE = 10
 
-/** "Monday, 09:00-10:30" -> "Mon 09:00-10:30" (table cell). */
+/**
+ * A class's weekly meetings in day order. Accepts the list the API sends and
+ * the older single `{ day, startTime, endTime }` object.
+ */
+export const meetingsOf = (schedule) => {
+  const list = Array.isArray(schedule) ? schedule : schedule?.day ? [schedule] : []
+  return [...list].sort((a, b) => DAYS.indexOf(a.day) - DAYS.indexOf(b.day))
+}
+
+/** Meetings -> "Mon 09:00-10:30, Wed 13:00-14:30" (table cell). */
 export const formatSchedule = (schedule) => {
-  if (!schedule?.day) return '—'
-  return `${DAY_ABBR[schedule.day] || schedule.day} ${schedule.startTime}-${schedule.endTime}`
+  const meetings = meetingsOf(schedule)
+  if (!meetings.length) return '—'
+  return meetings.map((m) => `${DAY_ABBR[m.day] || m.day} ${m.startTime}-${m.endTime}`).join(', ')
 }

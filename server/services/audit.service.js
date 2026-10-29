@@ -184,8 +184,9 @@ const expectedSessions = (classDoc, from, to, scheduled = []) => {
   const firstDay = new Date(`${ymd(classDoc.createdAt)}T00:00:00.000Z`);
   const sessions = [];
   for (let day = from; day <= to; day = addDays(day, 1)) {
-    if (weekdayOf(day) === classDoc.schedule?.day && day >= firstDay) {
-      sessions.push({ date: day, startTime: classDoc.schedule.startTime, endTime: classDoc.schedule.endTime, room: null });
+    const meeting = Class.meetingOn(classDoc.schedule, weekdayOf(day));
+    if (meeting && day >= firstDay) {
+      sessions.push({ date: day, startTime: meeting.startTime, endTime: meeting.endTime, room: null });
     }
   }
   return sessions;
@@ -240,7 +241,10 @@ const submissions = async (query = {}, { now = new Date() } = {}) => {
     // Days that have attendance but no expected slot (ad-hoc sessions, imports).
     marks
       .filter((m) => String(m._id.class) === String(classDoc._id) && !seenDays.has(ymd(m._id.date)))
-      .forEach((m) => sessions.push({ date: m._id.date, startTime: classDoc.schedule.startTime, endTime: classDoc.schedule.endTime, room: null }));
+      .forEach((m) => {
+        const meeting = Class.meetingOn(classDoc.schedule, weekdayOf(m._id.date)) ?? Class.meetingsOf(classDoc.schedule)[0];
+        sessions.push({ date: m._id.date, startTime: meeting?.startTime ?? '00:00', endTime: meeting?.endTime ?? '23:59', room: null });
+      });
 
     sessions.forEach((session) => {
       const mark = markByKey.get(`${classDoc._id}|${ymd(session.date)}`);
