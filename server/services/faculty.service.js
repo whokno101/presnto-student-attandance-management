@@ -4,6 +4,7 @@ const Faculty = require('../models/Faculty');
 const { ApiError } = require('../utils/apiError');
 const { parsePagination, buildPagination, escapeRegex } = require('../utils/query');
 const { assertUnique } = require('./shared');
+const auditService = require('./audit.service');
 
 const SALT_ROUNDS = 12;
 const USER_FIELDS = 'name email isActive';
@@ -61,7 +62,7 @@ const list = async (query = {}) => {
   return { data: rows.map(toDTO), pagination: buildPagination({ page, limit, total }) };
 };
 
-const create = async (payload) => {
+const create = async (payload, actor) => {
   const email = payload.email.toLowerCase();
   const employeeId = payload.employeeId.toUpperCase();
 
@@ -97,6 +98,14 @@ const create = async (payload) => {
     });
 
     const created = await Faculty.findById(faculty._id).populate('user', USER_FIELDS);
+    await auditService.record({
+      actor,
+      action: 'faculty.created',
+      entityType: 'Faculty',
+      entityId: created._id,
+      department: created.department,
+      summary: `Created faculty member ${user.name} (${created.employeeId})`,
+    });
     return toDTO(created);
   } catch (err) {
     if (user) await User.deleteOne({ _id: user._id }).catch(() => {});
@@ -104,7 +113,7 @@ const create = async (payload) => {
   }
 };
 
-const update = async (id, payload) => {
+const update = async (id, payload, actor) => {
   const faculty = await findByIdOrThrow(id);
 
   if (payload.email) {
@@ -127,6 +136,7 @@ const update = async (id, payload) => {
     });
   }
 
+  const before = toDTO(faculty);
   const user = faculty.user;
   if (payload.name !== undefined) user.name = payload.name;
   if (payload.email !== undefined) user.email = payload.email.toLowerCase();
@@ -138,20 +148,48 @@ const update = async (id, payload) => {
   if (payload.employeeId !== undefined) faculty.employeeId = payload.employeeId.toUpperCase();
   if (faculty.isModified()) await faculty.save();
 
-  return toDTO(await findByIdOrThrow(id));
+  const after = toDTO(await findByIdOrThrow(id));
+  const changes = ['name', 'email', 'employeeId', 'department', 'isActive']
+    .filter((field) => before[field] !== after[field])
+    .map((field) => ({ field, from: before[field], to: after[field] }));
+  // Passwords are never logged — only the fact that one was set.
+  if (payload.password) changes.push({ field: 'password', from: null, to: '(changed)' });
+
+  if (changes.length) {
+    await auditService.record({
+      actor,
+      action: 'faculty.updated',
+      entityType: 'Faculty',
+      entityId: after.id,
+      department: after.department,
+      summary: `Updated faculty member ${after.name} (${after.employeeId}): ${changes.map((c) => c.field).join(', ')}`,
+      changes,
+    });
+  }
+
+  return after;
 };
 
-const setActive = async (id, active) => {
+const setActive = async (id, active, actor) => {
   const faculty = await findByIdOrThrow(id);
 
   if (faculty.user.isActive !== active) {
     faculty.user.isActive = active;
     await faculty.user.save();
+    await auditService.record({
+      actor,
+      action: active ? 'faculty.activated' : 'faculty.deactivated',
+      entityType: 'Faculty',
+      entityId: faculty._id,
+      department: faculty.department,
+      summary: `${active ? 'Reactivated' : 'Deactivated'} faculty member ${faculty.user.name} (${faculty.employeeId}); history retained`,
+      changes: [{ field: 'isActive', from: !active, to: active }],
+    });
   }
 
   return toDTO(await findByIdOrThrow(id));
 };
 
-const remove = (id) => setActive(id, false);
+const remove = (id, actor) => setActive(id, false, actor);
 
 module.exports = { list, create, update, remove, setActive, toDTO };

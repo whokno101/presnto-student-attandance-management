@@ -42,6 +42,12 @@ const attendanceSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'Attendance must record who marked it'],
     },
+    // Which path recorded the current outcome (PB-17 import, PB-19 excuse, PB-20 QR).
+    source: {
+      type: String,
+      enum: ['manual', 'import', 'qr', 'excuse'],
+      default: 'manual',
+    },
     remarks: {
       type: String,
       trim: true,

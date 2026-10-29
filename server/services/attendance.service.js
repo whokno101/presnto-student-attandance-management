@@ -14,7 +14,8 @@ const Student = require('../models/Student');
 const { ApiError } = require('../utils/apiError');
 const { requireStudentProfile } = require('./access.service');
 const { parsePagination, buildPagination, escapeRegex } = require('../utils/query');
-const { todayInInstitution } = require('../utils/dates');
+const { todayInInstitution, ymd } = require('../utils/dates');
+const auditService = require('./audit.service');
 
 const STATUSES = Attendance.STATUSES;
 
@@ -60,11 +61,43 @@ const summarise = (records) => {
   };
 };
 
+/* ------------------------------------------------------------------ *
+ *   The single attendance write path
+ *
+ *   Manual marking, CSV import, approved excuses and QR check-in all go
+ *   through applyRecords, so every change is validated the same way, audited
+ *   per record (PB-13) and followed by the same recalculation hooks
+ *   (absence counts, risk alerts — PB-15/PB-16).
+ * ------------------------------------------------------------------ */
+
+/** Async listeners run after attendance changes: ({ classDoc, day, studentIds, actor }) => Promise */
+const changeHooks = [];
+const onAttendanceChanged = (hook) => changeHooks.push(hook);
+
+const runChangeHooks = async (event) => {
+  for (const hook of changeHooks) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await hook(event);
+    } catch (err) {
+      console.error('Attendance change hook failed:', err.message);
+    }
+  }
+};
+
+const STATUS_LABEL = { present: 'Present', late: 'Late', absent: 'Absent', excused: 'Excused' };
+
+const SOURCE_LABEL = { manual: '', import: ' (CSV import)', qr: ' (QR check-in)', excuse: ' (approved excuse)' };
+
 /**
- * Marks (or re-marks) one day for one class.
- * @param {{ classDoc: object, date: string|Date, records: Array<{studentId: string, status: string}>, actor: {id: string} }} input
+ * Validates and upserts attendance for one class/day.
+ * @param {{ classDoc: object, date: string|Date, records: Array<{studentId: string, status: string}>,
+ *           actor: {id: string, name: string, role: string}, source?: 'manual'|'import'|'qr'|'excuse',
+ *           onlyIfUnmarked?: boolean }} input
+ *   `onlyIfUnmarked` never overwrites an existing outcome (QR check-in after a
+ *   manual mark keeps the manual mark).
  */
-const mark = async ({ classDoc, date, records, actor }) => {
+const applyRecords = async ({ classDoc, date, records, actor, source = 'manual', onlyIfUnmarked = false }) => {
   const day = normalizeDay(date);
   const today = todayInInstitution();
 
@@ -72,6 +105,10 @@ const mark = async ({ classDoc, date, records, actor }) => {
     throw ApiError.validation('Attendance cannot be marked for a future date', [
       { field: 'date', message: 'Choose today or an earlier date' },
     ]);
+  }
+
+  if (classDoc.archivedAt) {
+    throw ApiError.conflict(`${classDoc.code} is archived; restore it before recording attendance`);
   }
 
   const roster = new Set((classDoc.students || []).map((id) => String(id)));
@@ -92,40 +129,139 @@ const mark = async ({ classDoc, date, records, actor }) => {
       ]);
     }
 
+    if (!STATUSES.includes(record.status)) {
+      throw ApiError.validation(`Status must be one of: ${STATUSES.join(', ')}`, [
+        { field: `records[${index}].status`, message: 'Unknown attendance status' },
+      ]);
+    }
+
     seen.add(studentId);
   });
 
+  const before = await Attendance.find({ class: classDoc._id, date: day }).select('student status').lean();
+  const previous = new Map(before.map((row) => [String(row.student), row.status]));
+
+  const toWrite = onlyIfUnmarked ? records.filter((r) => !previous.has(String(r.studentId))) : records;
+
   // Upsert each row: the unique (class, student, date) index turns a repeated
-  // save into an update, so "marking the same day again" is always safe.
-  await Attendance.bulkWrite(
-    records.map((record) => ({
-      updateOne: {
-        filter: { class: classDoc._id, student: record.studentId, date: day },
-        update: {
-          $set: { status: record.status, markedBy: actor.id },
-          $setOnInsert: { class: classDoc._id, student: record.studentId, date: day },
+  // save into an update, so "marking the same day again" is always safe and a
+  // retried request can never create a second record.
+  if (toWrite.length) {
+    await Attendance.bulkWrite(
+      toWrite.map((record) => ({
+        updateOne: {
+          filter: { class: classDoc._id, student: record.studentId, date: day },
+          update: {
+            $set: { status: record.status, markedBy: actor.id, source },
+            $setOnInsert: { class: classDoc._id, student: record.studentId, date: day },
+          },
+          upsert: true,
         },
-        upsert: true,
-      },
-    })),
-    { ordered: false }
-  );
+      })),
+      { ordered: false }
+    );
+  }
 
   // The summary covers the whole day, not just the rows in this request, so the
   // UI can show "9 of 12 marked" after a partial save.
-  const saved = await Attendance.find({ class: classDoc._id, date: day })
-    .select('student status')
-    .lean();
+  const saved = await Attendance.find({ class: classDoc._id, date: day }).select('student status').lean();
+  const savedIdByStudent = new Map(saved.map((row) => [String(row.student), row._id]));
+
+  const changed = toWrite.filter((record) => previous.get(String(record.studentId)) !== record.status);
+  await auditChanges({ classDoc, day, actor, source, changed, previous, savedIdByStudent, wasSubmitted: before.length > 0, saved });
+
+  if (changed.length) {
+    await runChangeHooks({ classDoc, day, studentIds: changed.map((r) => String(r.studentId)), actor, source });
+  }
 
   return {
     classId: String(classDoc._id),
     code: classDoc.code,
     date: day,
     marked: saved.length,
+    changed: changed.length,
+    skipped: records.length - toWrite.length,
     statuses: saved.map((row) => ({ studentId: String(row.student), status: row.status })),
     summary: summarise(saved),
   };
 };
+
+/** One audit entry per changed record, plus one for the submission itself. */
+const auditChanges = async ({ classDoc, day, actor, source, changed, previous, savedIdByStudent, wasSubmitted, saved }) => {
+  const names = new Map(
+    (
+      await Student.find({ _id: { $in: changed.map((r) => r.studentId) } })
+        .select('studentId user')
+        .populate('user', 'name')
+        .lean()
+    ).map((s) => [String(s._id), `${s.user?.name ?? 'Student'} (${s.studentId})`])
+  );
+
+  const dayLabel = ymd(day);
+  const suffix = SOURCE_LABEL[source] ?? '';
+  const entries = changed.map((record) => {
+    const studentId = String(record.studentId);
+    const from = previous.get(studentId) ?? null;
+    const who = names.get(studentId) ?? 'Student';
+    return {
+      actor,
+      action: from ? 'attendance.status_changed' : 'attendance.status_set',
+      entityType: 'Attendance',
+      entityId: savedIdByStudent.get(studentId),
+      classDoc,
+      summary: from
+        ? `Changed ${who} from ${STATUS_LABEL[from]} to ${STATUS_LABEL[record.status]} in ${classDoc.code} on ${dayLabel}${suffix}`
+        : `Marked ${who} ${STATUS_LABEL[record.status]} in ${classDoc.code} on ${dayLabel}${suffix}`,
+      changes: [{ field: 'status', from, to: record.status }],
+      meta: { studentId, date: dayLabel, source },
+    };
+  });
+
+  if (source === 'manual' || source === 'import') {
+    const counts = summarise(saved);
+    const deadline = auditService.deadlineFor(day, classDoc.schedule?.endTime ?? '23:59');
+    const timeliness = wasSubmitted ? null : new Date() <= deadline ? 'on_time' : 'late';
+    entries.push({
+      actor,
+      action: wasSubmitted ? 'attendance.resubmitted' : 'attendance.submitted',
+      entityType: 'Class',
+      entityId: classDoc._id,
+      classDoc,
+      summary: `${wasSubmitted ? 'Updated' : 'Submitted'} attendance for ${classDoc.code} on ${dayLabel}${suffix}: ${counts.present} present, ${counts.late} late, ${counts.absent} absent${counts.excused ? `, ${counts.excused} excused` : ''} (${changed.length} changed)`,
+      meta: { date: dayLabel, source, changed: changed.length, timeliness, deadline },
+    });
+  }
+
+  await auditService.recordMany(entries);
+};
+
+/**
+ * "Faculty opened the attendance sheet" (PB-13). Re-opening the same sheet
+ * within 15 minutes is not logged again, so browsing dates stays readable.
+ */
+const auditOpened = async ({ classDoc, day, actor }) => {
+  const AuditLog = require('../models/AuditLog');
+  const recent = await AuditLog.exists({
+    action: 'attendance.opened',
+    'actor.id': actor.id,
+    class: classDoc._id,
+    'meta.date': ymd(day),
+    createdAt: { $gte: new Date(Date.now() - 15 * 60 * 1000) },
+  });
+  if (recent) return;
+  await auditService.record({
+    actor,
+    action: 'attendance.opened',
+    entityType: 'Class',
+    entityId: classDoc._id,
+    classDoc,
+    summary: `Opened attendance for ${classDoc.code} on ${ymd(day)}`,
+    meta: { date: ymd(day) },
+  });
+};
+
+/** POST /api/attendance/mark */
+const mark = (input) => applyRecords({ ...input, source: 'manual' });
 
 /** Roster + whatever is already marked, for the marking sheet. */
 const getClassDay = async (classId, date) => {
@@ -176,7 +312,7 @@ const getStudentReport = async (studentId, { facultyId = null } = {}) => {
   const rows = await Attendance.find({ student: student._id })
     .populate({
       path: 'class',
-      select: 'name code department faculty',
+      select: 'name code department faculty archivedAt',
       populate: { path: 'faculty', select: 'employeeId user', populate: { path: 'user', select: 'name' } },
     })
     .sort({ date: -1 })
@@ -202,6 +338,7 @@ const getStudentReport = async (studentId, { facultyId = null } = {}) => {
       code: classDoc.code,
       name: classDoc.name,
       department: classDoc.department,
+      archived: Boolean(classDoc.archivedAt),
       faculty: classDoc.faculty
         ? {
             id: String(classDoc.faculty._id),
@@ -294,6 +431,7 @@ const BY_CLASS_PIPELINE = [
   {
     $set: {
       faculty: { $ifNull: ['$ownerUser.name', 'Unassigned'] },
+      archived: { $ne: [{ $ifNull: ['$archivedAt', null] }, null] },
       students: { $size: { $ifNull: ['$students', []] } },
       marked: { $ifNull: [{ $arrayElemAt: ['$tally.marked', 0] }, 0] },
       attended: { $ifNull: [{ $arrayElemAt: ['$tally.attended', 0] }, 0] },
@@ -307,13 +445,14 @@ const BY_CLASS_PIPELINE = [
       code: 1,
       name: 1,
       faculty: 1,
+      archived: 1,
       students: 1,
       marked: 1,
       attended: 1,
       rate: 1,
     },
   },
-  { $sort: { code: 1 } },
+  { $sort: { archived: 1, code: 1 } },
 ];
 
 /**
@@ -448,6 +587,9 @@ module.exports = {
   STATUSES,
   normalizeDay,
   summarise,
+  applyRecords,
+  onAttendanceChanged,
+  auditOpened,
   mark,
   getClassDay,
   getStudentReport,

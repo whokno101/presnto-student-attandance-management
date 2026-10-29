@@ -25,6 +25,8 @@ const validate = (values) => {
   if (!values.semester) errors.semester = 'Select a semester'
   if (!values.day) errors.day = 'Select a day'
 
+  if (values.room && !/^[A-Za-z0-9 -]{1,30}$/.test(values.room.trim())) errors.room = 'Up to 30 letters, numbers, spaces or dashes'
+
   if (!values.startTime) errors.startTime = 'Start time is required'
   if (!values.endTime) errors.endTime = 'End time is required'
   else if (values.startTime && values.endTime <= values.startTime) {
@@ -42,6 +44,7 @@ const emptyValues = {
   day: '',
   startTime: '',
   endTime: '',
+  room: '',
 }
 
 export default function ClassForm({ open, onOpenChange, classDoc, onSaved }) {
@@ -60,6 +63,7 @@ export default function ClassForm({ open, onOpenChange, classDoc, onSaved }) {
           day: classDoc.schedule?.day ?? '',
           startTime: classDoc.schedule?.startTime ?? '',
           endTime: classDoc.schedule?.endTime ?? '',
+          room: classDoc.room ?? '',
         }
       : emptyValues,
     validate: validateValues,
@@ -80,6 +84,7 @@ export default function ClassForm({ open, onOpenChange, classDoc, onSaved }) {
         day: form.values.day,
         startTime: form.values.startTime,
         endTime: form.values.endTime,
+        room: form.values.room.trim().toUpperCase(),
       }
 
       if (isEdit) {
@@ -185,12 +190,23 @@ export default function ClassForm({ open, onOpenChange, classDoc, onSaved }) {
       </FormField>
 
       <FormField
-        label="Day"
-        htmlFor="class-day"
-        required
-        error={form.fieldError('day')}
-        className="sm:col-span-2"
+        label="Default room"
+        htmlFor="class-room"
+        error={form.fieldError('room')}
+        hint="Used when scheduling sessions. Optional."
       >
+        <Input
+          id="class-room"
+          value={form.values.room}
+          onChange={(event) => form.setValue('room', event.target.value.toUpperCase())}
+          onBlur={() => form.markTouched('room')}
+          placeholder="B-204"
+          className="uppercase"
+          autoComplete="off"
+        />
+      </FormField>
+
+      <FormField label="Day" htmlFor="class-day" required error={form.fieldError('day')}>
         <Select value={form.values.day || undefined} onValueChange={(value) => form.setValue('day', value)}>
           <SelectTrigger id="class-day">
             <SelectValue placeholder="Select day" />

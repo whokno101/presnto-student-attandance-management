@@ -42,7 +42,8 @@ const resolveTargetStudent = async (req) => {
  *   POST   /api/classes                    admin
  *   PUT    /api/classes/:id                admin
  *   PUT    /api/classes/:id/assign-faculty admin
- *   DELETE /api/classes/:id                admin
+ *   DELETE /api/classes/:id                admin   archive (soft delete, PB-14)
+ *   POST   /api/classes/:id/restore        admin   restore within retention
  *   POST   /api/classes/:id/enroll         admin | student (self)
  *   POST   /api/classes/:id/unenroll       admin | student (self)
  *   GET    /api/classes/mine               admin | faculty | student
@@ -80,7 +81,7 @@ router.post(
   requireRole('admin'),
   validate(classCreateSchema),
   asyncHandler(async (req, res) => {
-    const classDoc = await classService.create(req.body);
+    const classDoc = await classService.create(req.body, req.user);
     res.status(201).json({ data: classDoc, message: 'Class created' });
   })
 );
@@ -90,7 +91,7 @@ router.put(
   requireRole('admin'),
   validate(assignFacultySchema),
   asyncHandler(async (req, res) => {
-    const classDoc = await classService.assignFaculty(req.params.id, req.body.facultyId);
+    const classDoc = await classService.assignFaculty(req.params.id, req.body.facultyId, req.user);
     res.json({
       data: classDoc,
       message: req.body.facultyId ? 'Faculty assigned' : 'Faculty unassigned',
@@ -103,7 +104,7 @@ router.put(
   requireRole('admin'),
   validate(classUpdateSchema),
   asyncHandler(async (req, res) => {
-    const classDoc = await classService.update(req.params.id, req.body);
+    const classDoc = await classService.update(req.params.id, req.body, req.user);
     res.json({ data: classDoc, message: 'Class updated' });
   })
 );
@@ -112,8 +113,18 @@ router.delete(
   '/:id',
   requireRole('admin'),
   asyncHandler(async (req, res) => {
-    const deleted = await classService.remove(req.params.id);
-    res.json({ data: deleted, message: 'Class deleted' });
+    // Never a hard delete: the class is archived and its attendance history kept.
+    const archived = await classService.archive(req.params.id, req.user);
+    res.json({ data: archived, message: `${archived.code} archived. Its attendance history is retained.` });
+  })
+);
+
+router.post(
+  '/:id/restore',
+  requireRole('admin'),
+  asyncHandler(async (req, res) => {
+    const restored = await classService.restore(req.params.id, req.user);
+    res.json({ data: restored, message: `${restored.code} restored` });
   })
 );
 
@@ -123,7 +134,7 @@ router.post(
   validate(enrollmentSchema),
   asyncHandler(async (req, res) => {
     const studentId = await resolveTargetStudent(req);
-    const classDoc = await enrollmentService.enroll({ classId: req.params.id, studentId });
+    const classDoc = await enrollmentService.enroll({ classId: req.params.id, studentId, actor: req.user });
     res.status(201).json({ data: classDoc, message: `Enrolled in ${classDoc.code}` });
   })
 );
@@ -134,7 +145,7 @@ router.post(
   validate(enrollmentSchema),
   asyncHandler(async (req, res) => {
     const studentId = await resolveTargetStudent(req);
-    const classDoc = await enrollmentService.unenroll({ classId: req.params.id, studentId });
+    const classDoc = await enrollmentService.unenroll({ classId: req.params.id, studentId, actor: req.user });
     res.json({ data: classDoc, message: `Unenrolled from ${classDoc.code}` });
   })
 );

@@ -7,6 +7,7 @@ const studentRoutes = require('./students');
 const facultyRoutes = require('./faculty');
 const classRoutes = require('./classes');
 const attendanceRoutes = require('./attendance');
+const auditRoutes = require('./audit');
 
 const router = express.Router();
 
@@ -20,6 +21,28 @@ router.use('/students', studentRoutes);
 router.use('/faculty', facultyRoutes);
 router.use('/classes', classRoutes);
 router.use('/attendance', attendanceRoutes);
+router.use('/audit', auditRoutes);
+
+/**
+ * Institution policy the UI needs to label and format things consistently with
+ * the server: time zone for timestamps, and every threshold (handbook §2).
+ */
+router.get('/policy', requireAuth, (req, res) => {
+  const policy = require('../config/policy');
+  res.json({
+    data: {
+      timeZone: policy.TIME_ZONE,
+      sessionWarningRate: policy.SESSION_WARNING_RATE,
+      studentRiskRate: policy.STUDENT_RISK_RATE,
+      riskMinUnexcusedAbsences: policy.RISK_MIN_UNEXCUSED_ABSENCES,
+      excludeExcusedFromDenominator: policy.EXCLUDE_EXCUSED_FROM_DENOMINATOR,
+      retentionDays: policy.RETENTION_DAYS,
+      overdueAfterHours: policy.OVERDUE_AFTER_HOURS,
+      qrRotationSeconds: policy.QR_ROTATION_SECONDS,
+      facultyImportEnabled: policy.FACULTY_IMPORT_ENABLED,
+    },
+  });
+});
 
 /** Machine-readable permission matrix, handy for audits and client hints. */
 router.get('/permissions', requireAuth, (req, res) => {
@@ -43,7 +66,11 @@ router.get('/permissions', requireAuth, (req, res) => {
       { method: 'POST', path: '/api/classes', roles: ['admin'] },
       { method: 'PUT', path: '/api/classes/:id', roles: ['admin'] },
       { method: 'PUT', path: '/api/classes/:id/assign-faculty', roles: ['admin'] },
-      { method: 'DELETE', path: '/api/classes/:id', roles: ['admin'] },
+      { method: 'DELETE', path: '/api/classes/:id', roles: ['admin'], notes: 'archives; history retained' },
+      { method: 'POST', path: '/api/classes/:id/restore', roles: ['admin'] },
+      { method: 'GET', path: '/api/audit', roles: ['admin'] },
+      { method: 'GET', path: '/api/audit/submissions', roles: ['admin'] },
+      { method: 'GET', path: '/api/audit/:id', roles: ['admin'] },
       { method: 'GET', path: '/api/admin/stats', roles: ['admin'] },
       {
         method: 'POST',

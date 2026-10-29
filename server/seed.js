@@ -16,7 +16,7 @@ const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const { disconnectDB } = require('./config/db');
-const { todayInInstitution } = require('./utils/dates');
+const { todayInInstitution, zonedTime, ymd } = require('./utils/dates');
 const { User, Faculty, Student, Class, Attendance } = require('./models');
 
 const SALT_ROUNDS = 12;
@@ -34,6 +34,9 @@ const WEEKS_HISTORY = 12;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const ADMIN = { name: 'Alice Admin', email: ADMIN_EMAIL, role: 'admin' };
+
+/** This class's session one week ago is left unsubmitted (Activity Log demo). */
+const MISSING_SUBMISSION_CLASS = 'CS-305';
 
 const FACULTY_NAMES = [
   { first: 'Elena', last: 'Marchetti' },
@@ -190,7 +193,10 @@ const seedDatabase = async () => {
   if (RESET) {
     console.log('Clearing existing data...');
     await Promise.all(
-      ['users', 'faculties', 'students', 'classes', 'attendances'].map((c) =>
+      [
+        'users', 'faculties', 'students', 'classes', 'attendances', 'auditlogs', 'classsessions',
+        'notifications', 'riskstates', 'excuses', 'qrcheckins', 'schedulelocks',
+      ].map((c) =>
         mongoose.connection.collection(c).deleteMany({})
       )
     );
@@ -275,6 +281,12 @@ const seedDatabase = async () => {
     createdClasses.push(classDoc);
   }
 
+  // The classes have been running for the whole seeded history.
+  await Class.collection.updateMany(
+    { _id: { $in: createdClasses.map((c) => c._id) } },
+    { $set: { createdAt: new Date(todayInInstitution().getTime() - WEEKS_HISTORY * 7 * DAY_MS) } }
+  );
+
   /* ---------------------------------------------------------------- *
    * 3. Enrollment — 3 distinct classes per student, 30 students per class
    * ---------------------------------------------------------------- */
@@ -312,7 +324,11 @@ const seedDatabase = async () => {
   // One list per student: 3 classes x 12 dates = 36 sessions.
   const sessionsByStudent = Array.from({ length: STUDENT_COUNT }, () => []);
   createdClasses.forEach((classDoc) => {
-    const dates = classDates(classDoc.schedule.day);
+    // One class leaves last week's session unsubmitted so the Activity Log
+    // shows a "missing" submission next to on-time and late ones.
+    const dates = classDates(classDoc.schedule.day).filter(
+      (date, index) => !(classDoc.code === MISSING_SUBMISSION_CLASS && index === 1)
+    );
     classDoc.students.forEach((studentId) => {
       sessionsByStudent[studentIndexById.get(String(studentId))].push({ classId: classDoc._id, date: dates });
     });
@@ -368,7 +384,53 @@ const seedDatabase = async () => {
     return true;
   });
 
-  await Attendance.insertMany(uniqueRecords, { ordered: false });
+  // Submission time per class session: usually during class (on time), ~12%
+  // the next day or later (late). Written raw so the timestamps are kept.
+  const classById = new Map(createdClasses.map((c) => [String(c._id), c]));
+  const submittedAtByKey = new Map();
+  uniqueRecords.forEach((record) => {
+    const key = `${record.class}|${record.date.toISOString()}`;
+    if (!submittedAtByKey.has(key)) {
+      const classDoc = classById.get(String(record.class));
+      const end = zonedTime(record.date, classDoc.schedule.endTime);
+      const offsetHours = rng() < 0.12 ? 2 + rng() * 40 : -(5 + rng() * 40) / 60;
+      const at = new Date(Math.min(end.getTime() + offsetHours * 3600 * 1000, Date.now()));
+      submittedAtByKey.set(key, at);
+    }
+    const at = submittedAtByKey.get(key);
+    record.createdAt = at;
+    record.updatedAt = at;
+    record.source = 'manual';
+  });
+
+  await Attendance.collection.insertMany(uniqueRecords, { ordered: false });
+
+  // Matching "attendance submitted" entries so the Activity Log has history.
+  const userById = new Map(userDocs.map((u) => [String(u._id), u]));
+  const auditEntries = [...submittedAtByKey.entries()].map(([key, at]) => {
+    const [classId, iso] = key.split('|');
+    const classDoc = classById.get(classId);
+    const date = new Date(iso);
+    const rows = uniqueRecords.filter((r) => String(r.class) === classId && r.date.getTime() === date.getTime());
+    const count = (status) => rows.filter((r) => r.status === status).length;
+    const actorUser = userById.get(String(markedByByClass.get(classId)));
+    const deadline = zonedTime(date, classDoc.schedule.endTime);
+    return {
+      actor: { id: actorUser._id, name: actorUser.name, role: 'faculty' },
+      action: 'attendance.submitted',
+      outcome: 'success',
+      entityType: 'Class',
+      entityId: classDoc._id,
+      class: classDoc._id,
+      classCode: classDoc.code,
+      department: classDoc.department,
+      summary: `Submitted attendance for ${classDoc.code} on ${ymd(date)}: ${count('present')} present, ${count('late')} late, ${count('absent')} absent (${rows.length} changed)`,
+      changes: [],
+      meta: { date: ymd(date), source: 'manual', changed: rows.length, timeliness: at <= deadline ? 'on_time' : 'late', deadline },
+      createdAt: at,
+    };
+  });
+  await mongoose.connection.collection('auditlogs').insertMany(auditEntries);
 
   /* ---------------------------------------------------------------- *
    * 5. Summary — read back from MongoDB so the numbers reflect the database

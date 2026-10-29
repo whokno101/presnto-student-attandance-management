@@ -9,6 +9,7 @@ import NotFound from '@/pages/NotFound'
 import MyClasses from '@/pages/MyClasses'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AttendanceOverview from '@/pages/admin/AttendanceOverview'
+import ActivityLog from '@/pages/admin/ActivityLog'
 import ManageStudents from '@/pages/admin/ManageStudents'
 import ManageFaculty from '@/pages/admin/ManageFaculty'
 import ManageClasses from '@/pages/admin/ManageClasses'
@@ -54,6 +55,14 @@ export default function App() {
           element={
             <RequireRole roles={['admin']}>
               <AttendanceOverview />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/admin/activity"
+          element={
+            <RequireRole roles={['admin']}>
+              <ActivityLog />
             </RequireRole>
           }
         />

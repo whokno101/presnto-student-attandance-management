@@ -66,8 +66,9 @@ router.get(
   '/class/:id',
   requireRole('admin', 'faculty'),
   asyncHandler(async (req, res) => {
-    await assertClassAccess(req.user, req.params.id);
+    const { classDoc } = await assertClassAccess(req.user, req.params.id);
     const sheet = await attendanceService.getClassDay(req.params.id, req.query.date);
+    await attendanceService.auditOpened({ classDoc, day: sheet.date, actor: req.user });
     res.json({ data: sheet });
   })
 );

@@ -123,6 +123,7 @@ const classBaseSchema = z.object({
     .regex(/^[0-9a-fA-F]{24}$/, 'Invalid faculty identifier')
     .optional()
     .nullable(),
+  room: z.string().trim().max(30, 'Room cannot exceed 30 characters').optional(),
 });
 
 const withTimeOrder = (schema) =>
@@ -143,6 +144,7 @@ const classUpdateSchema = withTimeOrder(
     startTime: timeString.optional(),
     endTime: timeString.optional(),
     facultyId: classBaseSchema.shape.facultyId,
+    room: classBaseSchema.shape.room,
   })
 );
 

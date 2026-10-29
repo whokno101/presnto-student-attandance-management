@@ -7,6 +7,8 @@ const Faculty = require('./Faculty');
 const Student = require('./Student');
 const Class = require('./Class');
 const Attendance = require('./Attendance');
+const AuditLog = require('./AuditLog');
+const ClassSession = require('./ClassSession');
 
 module.exports = {
   User,
@@ -14,6 +16,8 @@ module.exports = {
   Student,
   Class,
   Attendance,
+  AuditLog,
+  ClassSession,
   ROLES: require('./User').ROLES,
   DAYS: require('./Class').DAYS,
   ATTENDANCE_STATUSES: require('./Attendance').STATUSES,

@@ -11,6 +11,7 @@ export default function SearchInput({
   onSubmit,
   placeholder = 'Search...',
   className = '',
+  id,
 }) {
   const handleKeyDown = (event) => {
     if (event.key === 'Enter') {
@@ -31,7 +32,9 @@ export default function SearchInput({
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        aria-label={placeholder}
+        id={id}
+        // A visible <label htmlFor={id}> names the box when given; otherwise the placeholder does.
+        aria-label={id ? undefined : placeholder}
         className="pl-9"
       />
     </div>

@@ -44,7 +44,7 @@ const assertClassAccess = async (user, classId, options = {}) => {
     throw ApiError.validation('A classId is required');
   }
 
-  const classDoc = await Class.findById(classId).select('_id name code faculty students schedule');
+  const classDoc = await Class.findById(classId).select('_id name code department faculty students schedule archivedAt');
   if (!classDoc) {
     throw ApiError.notFound('Class not found');
   }
