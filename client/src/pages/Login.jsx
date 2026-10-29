@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
 
 import Logo from '@/components/common/Logo'
@@ -41,6 +41,11 @@ const REASON_MESSAGES = {
 export default function Login() {
   const { login, isAuthenticated, user, booting } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  // Where RequireAuth was sending the user (e.g. a scanned /check-in?token=…
+  // link). Only in-app paths are honoured, never an external URL.
+  const from = location.state?.from
+  const returnTo = from?.pathname && from.pathname.startsWith('/') && !from.pathname.startsWith('//') ? `${from.pathname}${from.search ?? ''}` : null
   const [searchParams, setSearchParams] = useSearchParams()
   const { toast } = useToast()
 
@@ -98,7 +103,7 @@ export default function Login() {
         description: `Signed in as ${signedIn.role}.`,
         variant: 'success',
       })
-      navigate(homeFor(signedIn.role), { replace: true })
+      navigate(returnTo ?? homeFor(signedIn.role), { replace: true })
     } catch (error) {
       const code = getErrorCode(error)
       const description =

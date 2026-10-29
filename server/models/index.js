@@ -12,6 +12,7 @@ const ClassSession = require('./ClassSession');
 const RiskState = require('./RiskState');
 const Notification = require('./Notification');
 const Excuse = require('./Excuse');
+const QrCheckin = require('./QrCheckin');
 
 module.exports = {
   User,
@@ -24,6 +25,7 @@ module.exports = {
   RiskState,
   Notification,
   Excuse,
+  QrCheckin,
   ROLES: require('./User').ROLES,
   DAYS: require('./Class').DAYS,
   ATTENDANCE_STATUSES: require('./Attendance').STATUSES,

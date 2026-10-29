@@ -14,6 +14,7 @@ const notificationRoutes = require('./notifications');
 const dataRoutes = require('./data');
 const excuseRoutes = require('./excuses');
 const scheduleRoutes = require('./schedule');
+const qrRoutes = require('./qr');
 
 // Registers the attendance-change hook that re-evaluates risk (PB-16).
 require('../services/risk.service');
@@ -37,6 +38,7 @@ router.use('/notifications', notificationRoutes);
 router.use('/data', dataRoutes);
 router.use('/excuses', excuseRoutes);
 router.use('/schedule', scheduleRoutes);
+router.use('/qr', qrRoutes);
 
 /**
  * Institution policy the UI needs to label and format things consistently with
@@ -91,6 +93,8 @@ router.get('/permissions', requireAuth, (req, res) => {
       { method: 'GET', path: '/api/analytics/faculty', roles: ['admin', 'faculty'], notes: 'faculty: own classes only' },
       { method: 'GET', path: '/api/data/export/:dataset', roles: ['admin', 'faculty'], notes: 'faculty: attendance for own classes only' },
       { method: 'POST', path: '/api/data/import/:dataset/preview|commit', roles: ['admin', 'faculty'], notes: 'faculty: attendance only, own classes, if enabled' },
+      { method: 'POST', path: '/api/qr/sessions', roles: ['admin', 'faculty'], notes: 'faculty: own classes; today only' },
+      { method: 'POST', path: '/api/qr/checkin', roles: ['student'], notes: 'student from the session; enrolled classes only' },
       { method: 'GET', path: '/api/schedule', roles: ['admin'] },
       { method: 'POST', path: '/api/schedule/preview', roles: ['admin'] },
       { method: 'POST', path: '/api/schedule', roles: ['admin'], notes: 'all-or-nothing; conflicts rejected with reasons' },

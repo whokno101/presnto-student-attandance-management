@@ -14,6 +14,8 @@ import Excuses from '@/pages/student/Excuses'
 import ExcuseReview from '@/pages/faculty/ExcuseReview'
 import Analytics from '@/pages/admin/Analytics'
 import Schedule from '@/pages/admin/Schedule'
+import QrCheckin from '@/pages/faculty/QrCheckin'
+import CheckIn from '@/pages/student/CheckIn'
 import Insights from '@/pages/faculty/Insights'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AttendanceOverview from '@/pages/admin/AttendanceOverview'
@@ -145,6 +147,22 @@ export default function App() {
           element={
             <RequireRole roles={['admin', 'faculty']}>
               <ExcuseReview />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/attendance/qr/:id"
+          element={
+            <RequireRole roles={['admin', 'faculty']}>
+              <QrCheckin />
+            </RequireRole>
+          }
+        />
+        <Route
+          path="/check-in"
+          element={
+            <RequireRole roles={['student']}>
+              <CheckIn />
             </RequireRole>
           }
         />

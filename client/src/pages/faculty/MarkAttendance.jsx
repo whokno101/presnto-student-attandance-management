@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AlertCircle, CheckCheck, Loader2, Save, Users } from 'lucide-react'
+import { AlertCircle, CheckCheck, Loader2, QrCode, Save, Users } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 import DatePicker from '@/components/common/DatePicker'
 import EmptyState from '@/components/common/EmptyState'
@@ -18,6 +19,7 @@ import { formatDay, STATUS_META, STATUS_ORDER, toYmd } from '@/lib/attendance'
 import { formatSchedule } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { getClassAttendance, markAttendance } from '@/services/attendance'
+import { startQrSession } from '@/services/qr'
 import { listClasses, listMyClasses } from '@/services/classes'
 
 const DEFAULT_STATUS = 'present'
@@ -26,6 +28,8 @@ export default function MarkAttendance() {
   const { user } = useAuth()
   const { toast } = useToast()
   const policy = usePolicy()
+  const navigate = useNavigate()
+  const [startingQr, setStartingQr] = useState(false)
 
   const [classes, setClasses] = useState([])
   const [loadingClasses, setLoadingClasses] = useState(true)
@@ -120,6 +124,20 @@ export default function MarkAttendance() {
   const markAllPresent = () => {
     if (!sheet) return
     setMarks(Object.fromEntries(sheet.students.map((student) => [student.id, DEFAULT_STATUS])))
+  }
+
+  const isToday = day === toYmd(new Date())
+
+  // PB-20: open a rotating QR code for today's session; manual marking stays available.
+  const startQr = async () => {
+    setStartingQr(true)
+    try {
+      const session = await startQrSession(classId)
+      navigate(`/attendance/qr/${session.id}`)
+    } catch (error) {
+      toast({ title: 'Could not start QR check-in', description: getErrorMessage(error), variant: 'destructive' })
+      setStartingQr(false)
+    }
   }
 
   const handleSave = async () => {
@@ -243,6 +261,12 @@ export default function MarkAttendance() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            {isToday ? (
+              <Button variant="outline" size="sm" onClick={startQr} disabled={startingQr}>
+                {startingQr ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
+                QR check-in
+              </Button>
+            ) : null}
             <Button variant="outline" size="sm" onClick={markAllPresent}>
               <CheckCheck className="h-4 w-4" />
               Mark all present

@@ -48,7 +48,9 @@ api.interceptors.response.use(
       hardRedirect(`/login?reason=${reason}`)
     }
 
-    if (status === 403 && !onLoginPage) {
+    // Requests that explain a 403 inline (e.g. "not enrolled in this class")
+    // opt out with `skipForbiddenRedirect`.
+    if (status === 403 && !onLoginPage && !error.config?.skipForbiddenRedirect) {
       hardRedirect('/403')
     }
 

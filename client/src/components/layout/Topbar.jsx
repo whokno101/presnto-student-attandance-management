@@ -15,9 +15,12 @@ const initialsOf = (name = '') =>
     .map((part) => part[0].toUpperCase())
     .join('') || '?'
 
+// Pages reached from a link rather than the menu.
+const EXTRA_TITLES = [{ to: '/attendance/qr', label: 'QR check-in' }]
+
 // Role-aware: the same path can carry a different label per role (/reports).
 const titleFor = (pathname, role) => {
-  const match = [...navItemsFor(role)].sort((a, b) => b.to.length - a.to.length).find((item) => pathname.startsWith(item.to))
+  const match = [...navItemsFor(role), ...EXTRA_TITLES].sort((a, b) => b.to.length - a.to.length).find((item) => pathname.startsWith(item.to))
   return match?.label || 'Dashboard'
 }
 
