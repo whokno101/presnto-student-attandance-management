@@ -329,12 +329,11 @@ export default function MarkAttendance() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {isToday ? (
-              <Button variant="outline" size="sm" onClick={startQr} disabled={startingQr}>
-                {startingQr ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
-                QR check-in
-              </Button>
-            ) : null}
+            {/* QR check-in is always for today, whatever day the picker shows. */}
+            <Button variant="outline" size="sm" onClick={startQr} disabled={startingQr}>
+              {startingQr ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
+              {isToday ? 'QR check-in' : 'QR check-in today'}
+            </Button>
             <Button variant="outline" size="sm" onClick={markAllPresent}>
               <CheckCheck className="h-4 w-4" />
               Mark all present
